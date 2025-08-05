@@ -1,0 +1,7 @@
+../Core/Src/axis.cpp:13:1:axis_class::axis_class()	1
+../Core/Src/axis.cpp:25:7:bool axis_class::init(uint8_t, error_class*, trajectory_class*, pos_sensor_class*, PID_class*, current_control_class*, data_recorder_class*, parameter_class*)	1
+../Core/Src/axis.cpp:38:7:bool axis_class::setParameter(CMD_STRUCT*)	2
+../Core/Src/axis.cpp:53:7:bool axis_class::refresh_parameter()	2
+../Core/Src/axis.cpp:70:7:void axis_class::enable()	1
+../Core/Src/axis.cpp:78:7:void axis_class::disable()	1
+../Core/Src/axis.cpp:87:6:bool axis_class::run()	3

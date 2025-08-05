@@ -1,0 +1,133 @@
+/*
+ * monitor.c
+ *
+ *  Created on: Mar 3, 2025
+ *      Author: manue
+ */
+
+#include "main.h"
+#include "monitor.h"
+#include "usbd_cdc_if.h"  // Enthält CDC_Transmit_FS()
+#include "usb_device.h"
+#include "commando_interpreter.h"  // Falls `com_inter` benutzt wird
+
+extern "C" ComInt_class com_inter;
+
+
+uint8_t rx_buff[RX_BUFFER_LENGTH];
+uint8_t tx_buff[TX_BUFFER_LENGTH]={0}; //ABCDEFGHIJ in ASCII code
+//char cmd_str[CMD_STR_LENGTH] = {0};
+uint16_t rx_cmd_str_cnt = 0;
+//bool new_cmd = 0;
+bool TX_DMA_buff_free = 1;
+
+
+void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
+{
+	// case end line
+	if(rx_buff[0] == 0x0A)
+	{
+		cmd_str[rx_cmd_str_cnt]=0;
+		rx_cmd_str_cnt = 0;
+		new_cmd = true;
+	}
+	else
+	{
+		cmd_str[rx_cmd_str_cnt] = rx_buff[0];
+		rx_cmd_str_cnt++;
+	}
+	// not for USB: HAL_UART_Receive_DMA(&hlpuart1, rx_buff, 1); //You need to toggle a breakpoint on this line!
+}
+
+void HAL_UART_TxCpltCallback(UART_HandleTypeDef *huart)
+{
+	TX_DMA_buff_free = true;
+}
+/**
+  * @brief string send command (DMA) with CR and LF
+  * new_line true = true --> CR and LF is added
+  */
+
+void send_string_DMA(const char* str, bool new_line)
+{
+	uint16_t len = TX_BUFFER_LENGTH;
+	while(TX_DMA_buff_free == false){}	// wait for last transmission is ended
+	for(uint16_t n= 0;n<TX_BUFFER_LENGTH-2;n++ )
+	{
+		if(str[n]  != 0)
+		{
+			tx_buff[n] = str[n];
+		}
+		else
+		{
+			if(new_line == true)
+			{
+				//tx_buff[n++] = '\r';	//add a line feed
+				tx_buff[n++] = '\n';	//add a line feed
+			}
+			len = n;
+			n = TX_BUFFER_LENGTH;
+		}
+	}
+	if(len >0)
+	{
+		TX_DMA_buff_free = false; // new transmission started
+		HAL_UART_Transmit_DMA(&hlpuart1, tx_buff,len);
+	}
+}
+
+//alternativ USB:
+void send_string_USB(const char* str, bool new_line)
+{
+    uint8_t tx_buff[TX_BUFFER_LENGTH] = {0};
+    uint16_t len = 0;
+
+    for (uint16_t n = 0; n < TX_BUFFER_LENGTH - 2; n++)
+    {
+        if (str[n] != '\0')
+        {
+            tx_buff[n] = str[n];
+        }
+        else
+        {
+            if (new_line)
+            {
+                tx_buff[n++] = '\n';  // Zeilenumbruch hinzufügen
+            }
+            len = n;
+            break;
+        }
+    }
+
+    if (len > 0)
+    {
+        CDC_Transmit_FS(tx_buff, len);
+    }
+}
+
+void send_raw_array_DMA(const uint8_t *char_array_ptr, uint16_t len)
+{
+	while(TX_DMA_buff_free == false){}	// wait for last transmission is ended
+	TX_DMA_buff_free = false; // new transmission started
+	HAL_UART_Transmit_DMA(&hlpuart1, char_array_ptr,len);
+}
+
+// TODO send raw array USB
+
+void test_monitor()
+{
+	send_string_USB("Hello PDOG!", 1);  // Dummy-Nachricht
+}
+
+void run_monitor(){
+
+	//parse serial buffer
+	if(new_cmd == 1)
+	{
+	  // execute CMD
+	  com_inter.interpreter(&cmd_str[0]);
+
+
+	  new_cmd = 0;
+	}
+}

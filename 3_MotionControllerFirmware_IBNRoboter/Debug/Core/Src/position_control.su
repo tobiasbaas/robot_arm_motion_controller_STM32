@@ -1,0 +1,2 @@
+../Core/Inc/position_control.h:24:1:position_control::position_control()	16	static
+../Core/Inc/position_control.h:28:1:position_control::~position_control()	16	static

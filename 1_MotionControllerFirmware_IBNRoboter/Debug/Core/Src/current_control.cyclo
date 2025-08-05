@@ -1,0 +1,6 @@
+../Core/Src/current_control.cpp:16:1:current_control_class::current_control_class()	1
+../Core/Src/current_control.cpp:20:6:void current_control_class::init(axis_class*, parameter_class*, error_class*, set_pwm_class*, trajectory_class*)	1
+../Core/Src/current_control.cpp:32:6:bool current_control_class::setParameter(CMD_STRUCT*)	2
+../Core/Src/current_control.cpp:49:6:bool current_control_class::setAngle(float)	1
+../Core/Src/current_control.cpp:56:7:float current_control_class::getPosition()	1
+../Core/Src/current_control.cpp:61:6:bool current_control_class::run()	2

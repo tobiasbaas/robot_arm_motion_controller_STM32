@@ -1,0 +1,6 @@
+../Core/Src/parameter.cpp:14:1:parameter_class::parameter_class()	1
+../Core/Src/parameter.cpp:20:6:void parameter_class::init_param(error_class*)	1
+../Core/Src/parameter.cpp:25:6:bool parameter_class::getParameter(PARAM_DEV*, uint16_t*, PARAM_DEV*)	4
+../Core/Src/parameter.cpp:54:6:bool parameter_class::setParameter(CMD_STRUCT*, PARAM_DEV*)	6
+../Core/Src/parameter.cpp:99:6:bool parameter_class::convert_value_from_string(UNION_VALUE*, PARAM_TYPE, char*, int32_t, int32_t)	33
+../Core/Src/parameter.cpp:196:6:bool parameter_class::sendParameterHelp(uint16_t*, PARAM_DEV*)	6
