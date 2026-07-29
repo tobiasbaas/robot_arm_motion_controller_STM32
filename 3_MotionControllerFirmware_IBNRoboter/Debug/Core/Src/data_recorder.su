@@ -1,9 +1,0 @@
-../Core/Src/data_recorder.cpp:14:1:data_recorder_class::data_recorder_class(parameter_class*, error_class*)	24	static
-../Core/Src/data_recorder.cpp:31:6:void data_recorder_class::init()	16	static
-../Core/Src/data_recorder.cpp:37:6:void data_recorder_class::run()	16	static
-../Core/Src/data_recorder.cpp:60:6:bool data_recorder_class::setParameter(CMD_STRUCT*)	24	static
-../Core/Src/data_recorder.cpp:74:6:bool data_recorder_class::send_data()	272	static
-../Core/Src/data_recorder.cpp:119:6:bool data_recorder_class::trigger_start(TRIGGER_TYPE)	24	static
-../Core/Src/data_recorder.cpp:140:6:bool data_recorder_class::parameter_update()	24	static
-../Core/Src/data_recorder.cpp:152:6:bool data_recorder_class::table_ptr_update(uint16_t, uint8_t)	32	static
-../Core/Src/data_recorder.cpp:292:6:bool data_recorder_class::send_DR_hlp()	176	static

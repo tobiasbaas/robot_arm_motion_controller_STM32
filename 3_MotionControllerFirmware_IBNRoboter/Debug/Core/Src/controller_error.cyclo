@@ -1,4 +1,0 @@
-../Core/Src/controller_error.cpp:14:1:error_class::error_class()	2
-../Core/Src/controller_error.cpp:33:6:bool error_class::add(DEV_CLASS, int16_t, const char*, uint16_t)	4
-../Core/Src/controller_error.cpp:62:6:bool error_class::print_error_ids()	2
-../Core/Src/controller_error.cpp:81:6:bool error_class::print_error_list()	7

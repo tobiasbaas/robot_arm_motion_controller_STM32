@@ -1,4 +1,0 @@
-../Core/Src/app_freertos.c:95:6:MX_FREERTOS_Init	1
-../Core/Src/app_freertos.c:144:6:StartDefaultTask	1
-../Core/Src/app_freertos.c:167:6:canopen_task	1
-../Core/Src/app_freertos.c:199:6:startIBNusbTask	1

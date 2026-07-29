@@ -1,8 +1,0 @@
-../Core/Src/pos_sensor.cpp:13:1:pos_sensor_class::pos_sensor_class()	16	static
-../Core/Src/pos_sensor.cpp:27:6:void pos_sensor_class::init(axis_class*, parameter_class*, error_class*)	24	static
-../Core/Src/pos_sensor.cpp:35:6:bool pos_sensor_class::setParameter(CMD_STRUCT*)	32	static
-../Core/Src/pos_sensor.cpp:52:6:bool pos_sensor_class::refresh_parameter()	32	static
-../Core/Src/pos_sensor.cpp:70:6:bool pos_sensor_class::get_position()	32	static
-../Core/Src/pos_sensor.cpp:85:6:bool pos_sensor_class::get_stepper_position()	24	static
-../Core/Src/pos_sensor.cpp:96:6:bool pos_sensor_class::get_value_AB()	24	static
-../Core/Src/pos_sensor.cpp:106:6:bool pos_sensor_class::get_value_SinCos()	24	static

@@ -1,7 +1,0 @@
-../Core/Src/monitor.cpp:25:6:void HAL_UART_RxCpltCallback(UART_HandleTypeDef*)	2
-../Core/Src/monitor.cpp:42:6:void HAL_UART_TxCpltCallback(UART_HandleTypeDef*)	1
-../Core/Src/monitor.cpp:51:6:void send_string_DMA(const char*, bool)	6
-../Core/Src/monitor.cpp:80:6:void send_string_USB(const char*, bool)	5
-../Core/Src/monitor.cpp:108:6:void send_raw_array_DMA(const uint8_t*, uint16_t)	2
-../Core/Src/monitor.cpp:117:6:void test_monitor()	1
-../Core/Src/monitor.cpp:122:6:void run_monitor()	2
