@@ -18,7 +18,6 @@ ComInt_class::ComInt_class(error_class* myError_ptr)
 interpreter --> input: device string
 --------------------------------------------------------------
 */
-
 bool ComInt_class::interpreter(char *str)
 {
     bool ret = false;
@@ -27,7 +26,7 @@ bool ComInt_class::interpreter(char *str)
 
     for(int n=0;n<MAX_NUM_COMANDS;n++)
     {
-        if(strcmp(&this->myCmd.cmd_str[0],ComInt_class::cmd_tab[n].cmd)==0) // command found...
+        if(strcmp(&this->myCmd.cmd_str[0], ComInt_class::cmd_tab[n].cmd) == 0) // command found...
         {
             (this->*cmd_tab[n].meth_fnc)(); //calls function from table
             n = MAX_NUM_COMANDS;
@@ -176,8 +175,6 @@ DEV_CLASS ComInt_class::arg2module(char* str)
     return module;
 }
 
-
-
 bool ComInt_class::exit(void)
 {
 
@@ -186,7 +183,6 @@ bool ComInt_class::exit(void)
 
     return false;
 }
-
 
 void ComInt_class::cpy_CMD_arguments_4_parameters(void)
 {
@@ -213,7 +209,6 @@ void ComInt_class::cpy_CMD_arguments_4_parameters(void)
 print parameter value
 --------------------------------------------------------------
  _UINT64, , _UINT16, _INT64, _INT32, _INT16, _FLOAT, _DOUBLE, _STRING, _BOOL, _INIT, POS_INT
-
  */
 bool ComInt_class::convert_value_from_string(PARAM_DEV* param)
 {
@@ -257,7 +252,6 @@ bool ComInt_class::convert_value_from_string(PARAM_DEV* param)
 	send_string_USB(str,true);
 	return true;
 }
-
 
 /*
 --------------------------------------------------------------
@@ -436,7 +430,6 @@ bool ComInt_class::get_parameter_hlp(void)
     return ret;
 }
 
-
 /*
 --------------------------------------------------------------
 COMMAND GET PARAMETERS --> "GPA"
@@ -495,7 +488,7 @@ bool ComInt_class::get_parameter(void)
     }
     else
     {
-    	ret = this->myParameter->getParameter(&this->return_parameter, &this->myCmd.i_address, modul_parameter_ptr);
+    	ret = this->myParameter->getParameter(&this->myCmd.i_address, modul_parameter_ptr);
     	if(ret == true)
     	{
     		ComInt_class::print_param_value(&this->return_parameter);
@@ -509,7 +502,6 @@ bool ComInt_class::get_parameter(void)
 pront parameter value
 --------------------------------------------------------------
  _UINT64, , _UINT16, _INT64, _INT32, _INT16, _FLOAT, _DOUBLE, _STRING, _BOOL, _INIT, POS_INT
-
  */
 bool ComInt_class::print_param_value(PARAM_DEV* param)
 {
@@ -661,6 +653,7 @@ void ComInt_class::print_cmd_list(void)
 	send_string_USB("#END LIST",true);
 
 }
+
 /*
 --------------------------------------------------------------
 COMMAND GET DEVICE ID --> "IDN"
@@ -683,6 +676,7 @@ bool ComInt_class::get_dev_id(void)
 	send_string_USB(CPY_STR,true);
     return true;
 }
+
 /*
 --------------------------------------------------------------
 COMMAND MOV AXIS --> "MOV"
@@ -705,7 +699,6 @@ bool ComInt_class::mov(void)
 	}
     return ret;
 }
-
 
 /*
 --------------------------------------------------------------
@@ -755,8 +748,6 @@ bool ComInt_class::enable_disable_axis(void)
     return ret;
 }
 
-
-
 /*
 --------------------------------------------------------------
 COMMAND MOV AXIS --> "MOV"
@@ -779,8 +770,6 @@ bool ComInt_class::servo_on_off(void)
 	return ret;
 }
 
-
-
 /*
 --------------------------------------------------------------
 COMMAND START RECORDING --> "REC"
@@ -791,7 +780,6 @@ bool ComInt_class::rec(void)
 	this->myDR->trigger_start(DR_TGR_MOV);
     return true;
 }
-
 
 /*
 --------------------------------------------------------------
@@ -805,9 +793,6 @@ bool ComInt_class::run_current_loop(void)
 	return ret;
 }
 
-
-
-
 /*
 --------------------------------------------------------------
 COMMAND Find Phase Algorithm start
@@ -818,8 +803,6 @@ bool ComInt_class::find_phase(void)
 
     return true;
 }
-
-
 
 /*
 --------------------------------------------------------------
@@ -864,8 +847,6 @@ bool ComInt_class::status(void)
     return true;
 }
 
-
-
 /*
 --------------------------------------------------------------
 COMMAND SAVE PARAMETERS TO EPROM --> "SEP"
@@ -890,7 +871,6 @@ bool ComInt_class::start_current_test(void)
     return true;
 }
 
-
 /*
 --------------------------------------------------------------
 COMMAND Start SVM Test --> "SVT"
@@ -901,7 +881,6 @@ bool ComInt_class::start_svm_test(void)
 
     return true;
 }
-
 
 /*
 --------------------------------------------------------------
@@ -924,8 +903,6 @@ bool ComInt_class::stop(void)
 
     return true;
 }
-
-
 
 /*
 --------------------------------------------------------------

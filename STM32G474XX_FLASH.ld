@@ -56,7 +56,8 @@ ENTRY(Reset_Handler)
 MEMORY
 {
 RAM (xrw)      : ORIGIN = 0x20000000, LENGTH = 128K
-FLASH (rx)      : ORIGIN = 0x8000000, LENGTH = 512K
+FLASH (rx)      : ORIGIN = 0x8000000, LENGTH = 448K
+DATA (rwx)      : ORIGIN = 0x8070000, LENGTH = 64K
 }
 
 /* Highest address of the user mode stack */
@@ -69,6 +70,14 @@ _Min_Stack_Size = 0x400; /* required amount of stack */
 /* Define output sections */
 SECTIONS
 {
+  /* USER Data for Parameters*/
+  .user_data (NOLOAD) :
+  {
+  . = ALIGN(4);
+  KEEP (*(.user_data))
+  . = ALIGN(4);
+  } > DATA
+
   /* The startup code goes first into FLASH */
   .isr_vector :
   {

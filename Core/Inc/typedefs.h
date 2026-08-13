@@ -18,6 +18,38 @@
 #define CMD_STR_LENGTH 		60
 #define CMD_MAX_ARGS 		4	// maximum number of arguments in command
 
+
+/*****************************************************
+* FLASH LOCATION FOR PARAMETERS
+*******************************************************/
+#define ADDR_FLASH_DRC   		((uint32_t)0x08073000) /* Base @ of Page 230, 2 Kbytes */
+#define ADDR_FLASH_A1   		((uint32_t)0x08073800) /* Base @ of Page 231, 2 Kbytes */
+#define ADDR_FLASH_A1_TRJ  		((uint32_t)0x08074000) /* Base @ of Page 232, 2 Kbytes */
+#define ADDR_FLASH_A1_POS   	((uint32_t)0x08074800) /* Base @ of Page 233, 2 Kbytes */
+#define ADDR_FLASH_A1_PID_POS   ((uint32_t)0x08075000) /* Base @ of Page 234, 2 Kbytes */
+#define ADDR_FLASH_A1_CUR_CTL  	((uint32_t)0x08075800) /* Base @ of Page 235, 2 Kbytes */
+//#define ADDR_FLASH_PAGE_236   	((uint32_t)0x08076000) /* Base @ of Page 236, 2 Kbytes */
+//#define ADDR_FLASH_PAGE_237   	((uint32_t)0x08076800) /* Base @ of Page 237, 2 Kbytes */
+//#define ADDR_FLASH_PAGE_238   	((uint32_t)0x08077000) /* Base @ of Page 238, 2 Kbytes */
+//#define ADDR_FLASH_PAGE_239  	((uint32_t)0x08077800) /* Base @ of Page 239, 2 Kbytes */
+#define ADDR_FLASH_A2   		((uint32_t)0x08078000) /* Base @ of Page 240, 2 Kbytes */
+#define ADDR_FLASH_A2_TRJ   	((uint32_t)0x08078800) /* Base @ of Page 241, 2 Kbytes */
+#define ADDR_FLASH_A2_POS   	((uint32_t)0x08079000) /* Base @ of Page 242, 2 Kbytes */
+#define ADDR_FLASH_A2_PID_POS   ((uint32_t)0x08079800) /* Base @ of Page 243, 2 Kbytes */
+#define ADDR_FLASH_A2_CUR_CTL   ((uint32_t)0x0807a000) /* Base @ of Page 244, 2 Kbytes */
+//#define ADDR_FLASH_PAGE_245   	((uint32_t)0x0807a800) /* Base @ of Page 245, 2 Kbytes */
+//#define ADDR_FLASH_PAGE_246  	 ((uint32_t)0x0807b000) /* Base @ of Page 246, 2 Kbytes */
+//#define ADDR_FLASH_PAGE_247   	((uint32_t)0x0807b800) /* Base @ of Page 247, 2 Kbytes */
+//#define ADDR_FLASH_PAGE_248   	((uint32_t)0x0807c000) /* Base @ of Page 248, 2 Kbytes */
+//#define ADDR_FLASH_PAGE_249   	((uint32_t)0x0807c800) /* Base @ of Page 249, 2 Kbytes */
+#define ADDR_FLASH_PAGE_SYSTEM   ((uint32_t)0x0807d000) /* Base @ of Page 250, 2 Kbytes */
+//#define ADDR_FLASH_PAGE_251   	((uint32_t)0x0807d800) /* Base @ of Page 251, 2 Kbytes */
+//#define ADDR_FLASH_PAGE_252   	((uint32_t)0x0807e000) /* Base @ of Page 252, 2 Kbytes */
+//#define ADDR_FLASH_PAGE_253   	((uint32_t)0x0807e800) /* Base @ of Page 253, 2 Kbytes */
+//#define ADDR_FLASH_PAGE_254   	((uint32_t)0x0807f000) /* Base @ of Page 254, 2 Kbytes */
+//#define ADDR_FLASH_PAGE_255   	((uint32_t)0x0807f800) /* Base @ of Page 255, 2 Kbytes */
+
+
 // Driver 1A
 #define AXA_MOTORSTEP_COUNT	200
 #define AXA_MAX_V			4.0
@@ -88,7 +120,6 @@ const float PHASEFACTORB[3] ={0.5, 0.8, 1.0}; // default*/
 /*****************************************************
 * DEFINITIONS FOR DEFAULT VALUES IN FIRMAWARE
 *******************************************************/
-
 // Trajectory Parameter
 #define DEFAULT_MAX_TRAVELRANGE 	100.0
 #define DEFAULT_MIN_TRAVELRANGE 	-100.0
@@ -99,7 +130,6 @@ const float PHASEFACTORB[3] ={0.5, 0.8, 1.0}; // default*/
 /*****************************************************
  *  ENUM for classifying CONTROLLER MODULES
  *****************************************************/
-
 #define NUM_OF_DEV_CLASSES 12
 //#define DEV_CLASS_STR{{"NON"},{"SYS"},{"DRC"},{"AXS"},{"MCO"},{"CCO"},{"ENC"},{"TRJ"},{"PWM"},{"PAM"},{"CMD"},{"ERR"}};
 
@@ -118,19 +148,17 @@ typedef enum
 /*****************************************************
  *  ENUM for classifying PARAMETER TYPES
  *****************************************************/
-
 #define NUM_OF_PARAM_TYPES 11
 #define PARAM_TYPE_STR {{"UINT64"},{"UINT32"},{"UINT16"},{"INT64"},{"INT32"},{"INT16"},{"FLOAT"},{"DOUBLE"},{"STRING"},{"BOOL"},{"POSINT"}};
 typedef enum
 {
-    _UINT64, _UINT32, _UINT16, _INT64, _INT32, _INT16, _FLOAT, _DOUBLE, _STRING, _BOOL, POS_INT
+    _UINT64 = 0, _UINT32 = 1, _UINT16 = 2, _INT64 = 3, _INT32 = 4, _INT16 = 5, _FLOAT = 6, _DOUBLE = 7, _STRING = 8, _BOOL = 9, POS_INT = 10
 }PARAM_TYPE;
 
 
 /*****************************************************
  *  struct for UNION_VALUES
  *****************************************************/
-
 typedef union
 {
 	int64_t 	i64;
@@ -149,7 +177,6 @@ typedef union
 /*****************************************************
  * PARAMETER STRUCT
  *****************************************************/
-
 typedef struct
 {
     uint16_t 		adress;
@@ -165,7 +192,6 @@ typedef struct
 /*****************************************************
  * CMD STRUCT   
  *****************************************************/
-
 typedef struct
 {
     char        cmd_str[4];     // command
