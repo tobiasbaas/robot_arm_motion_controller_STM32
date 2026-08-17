@@ -10,6 +10,8 @@
 //#define CONTROLLER_2
 //#define CONTROLLER_3
 
+//#define SEND_OVER_USB // Information is sent using `send_string_USB`; comment this out to send using `send_string_DMA`
+
 #define VERSION_STR 		"00.00.002"
 #define CONTROLLER_NAME_STR "LIS-MC-U1A2" // Labor Inform. Sys. - Motion Controller - Universal: no1 Axis: 2
 #define CPY_STR 			"HKA Copyright 2025"

@@ -275,8 +275,8 @@ bool data_recorder_class::send_DR_hlp(void)
 	sprintf(str_mem, &this->table_name[trace][0]);
 	ptr_mem = this->rec_table_ptr[trace];
 
-	send_string_DMA("#DATA RECORDER HELP",true);
-	send_string_DMA("* ID: SIGNAL",true);
+	send_string("#DATA RECORDER HELP",true);
+	send_string("* ID: SIGNAL",true);
 	// get all table names...
 	for(uint8_t id=0;id<=MAX_NUM_DR_TRACES_TO_CHOOSE;id++)
 	{
@@ -298,11 +298,11 @@ bool data_recorder_class::send_DR_hlp(void)
 				}
 			}
 			sprintf(str_send,"%d: %s",id,str_tmp);
-			send_string_DMA(str_send,true);
+			send_string(str_send,true);
 		}
 
 	}
-	send_string_DMA("#END",true);
+	send_string("#END",true);
 
 	sprintf(&this->table_name[trace][0], str_mem);
 	this->rec_table_ptr[trace] = ptr_mem;
@@ -318,20 +318,20 @@ bool data_recorder_class::send_data(void)
 {
 	char str[200];
 	sprintf(str,"#REC HEADER START: \n* RECORD RATE: %d \n* NUMBER Tables: %d \n* TABLE LENGTH: %d",this->record_rate_max, this->record_tables_max , DR_TABLE_LENGTH );
-	send_string_DMA(str,true);
-	send_string_DMA(&this->table_name[0][0],true);
-	send_string_DMA(&this->table_name[1][0],true);
-	send_string_DMA(&this->table_name[2][0],true);
-	send_string_DMA(&this->table_name[3][0],true);
-	send_string_DMA("#HEADER END",true);
-	send_string_DMA("#TABLE START:",true);
+	send_string(str,true);
+	send_string(&this->table_name[0][0],true);
+	send_string(&this->table_name[1][0],true);
+	send_string(&this->table_name[2][0],true);
+	send_string(&this->table_name[3][0],true);
+	send_string("#HEADER END",true);
+	send_string("#TABLE START:",true);
 	for(uint16_t i=0;i<DR_TABLE_LENGTH;i++)
 	//for(uint16_t i=0;i<100;i++)
 	{
 		sprintf(str,"%6.6f;%6.6f;%6.6f;%6.6f;",this->record_table_1[i],this->record_table_2[i],this->record_table_3[i],this->record_table_4[i]);
-		send_string_DMA(str,true);
+		send_string(str,true);
 	}
-	send_string_DMA("#TABLE END",true);
+	send_string("#TABLE END",true);
 
 	/*
 	send_string_DMA("#TABLE 1 START:",true);
@@ -359,17 +359,17 @@ bool data_recorder_class::send_data_binary(void)
 	char str[200];
 	float data[4];
 	sprintf(str,"#REC HEADER START: \n* SERVO FREQUENCY: %d \n* RECORD RATE: %d \n* NUMBER Tables: %d \n* TABLE LENGTH: %d", SERVO_FRQ,this->record_rate_max, this->record_tables_max, DR_TABLE_LENGTH );
-	send_string_DMA(str,true);
-	send_string_DMA(&this->table_name[0][0],true);
-	send_string_DMA(&this->table_name[1][0],true);
-	send_string_DMA(&this->table_name[2][0],true);
-	send_string_DMA(&this->table_name[3][0],true);
+	send_string(str,true);
+	send_string(&this->table_name[0][0],true);
+	send_string(&this->table_name[1][0],true);
+	send_string(&this->table_name[2][0],true);
+	send_string(&this->table_name[3][0],true);
 	//send_string_DMA(&this->table_name[4][0],true);
 	//send_string_DMA(&this->table_name[5][0],true);
 	//send_string_DMA(&this->table_name[6][0],true);
 	//send_string_DMA(&this->table_name[7][0],true);
-	send_string_DMA("#HEADER END",true);
-	send_string_DMA("#TABLE BINARY START:",true);
+	send_string("#HEADER END",true);
+	send_string("#TABLE BINARY START:",true);
 	for (uint16_t i = 0; i < DR_TABLE_LENGTH; ++i) {
 		data[0] = this->record_table_1[i];
 		data[1] = this->record_table_2[i];
@@ -382,7 +382,7 @@ bool data_recorder_class::send_data_binary(void)
 		// Achtung: Pointer-Cast zu Bytes!
 		send_raw_array_DMA((uint8_t*)data, sizeof(data));
 	    }
-	send_string_DMA("#TABLE BINARY END",true);
+	send_string("#TABLE BINARY END",true);
 
 	return true;
 }

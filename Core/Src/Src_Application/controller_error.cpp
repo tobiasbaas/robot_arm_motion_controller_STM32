@@ -64,17 +64,14 @@ bool error_class::print_error_ids(void)
 	bool ret = true;
 	char str[65] = {0};
 
-	//send_string_DMA("#ERROR-IDs:",true);
-	send_string_USB("#ERROR-IDs:",true);
+	send_string("#ERROR-IDs:",true);
 	for(uint8_t i=0; i< MAX_NUM_ERRORS; i++)
 	{
 		sprintf(str, "%d: %s", this->my_sys_error_list[i].error_value, this->my_sys_error_list[i].description);
-		//send_string_DMA(str,true);
-		send_string_USB(str,true);
+		send_string(str,true);
 	}
 
-	//send_string_DMA("#END",true);
-	send_string_USB("#END",true);
+	send_string("#END",true);
     return  ret;
 }
 
@@ -91,8 +88,7 @@ bool error_class::print_error_list()
         m = error_class::cnt;
     }
 
-    //send_string_DMA("#ERROR-List:",true);
-    send_string_USB("#ERROR-List:",true);
+    send_string("#ERROR-List:",true);
     uint16_t descript_index = MAX_NUM_ERRORS;
     for(uint16_t n=0; n<m; n++)
     {
@@ -106,8 +102,7 @@ bool error_class::print_error_list()
         }
 
         sprintf(str, "CMD: %s, ERROR %d:", error_class::myErrors[n].cmd_str, (int)error_class::myErrors[n].error_value);
-        //send_string_DMA(str,false);
-        send_string_USB(str,false);
+        send_string(str,false);
 
         sprintf(str, " %s - Module: %s",
             my_sys_error_list[descript_index].description,
@@ -117,18 +112,15 @@ bool error_class::print_error_list()
         error_class::myErrors[n].file[29] = 0;
 
         if(error_class::debug_out == true){
-        	//send_string_DMA(str,false);
-        	send_string_USB(str,false);
+        	send_string(str,false);
         	sprintf(str, " File: %s l: %d",
             error_class::myErrors[n].file,
             (int)error_class::myErrors[n].line
             );
-        //send_string_DMA(str,true);
-        send_string_USB(str,true);
+        send_string(str,true);
         }
         else{
-        	//send_string_DMA(str,true);
-        	send_string_USB(str,true);
+        	send_string(str,true);
         }
 
         ret = true;
@@ -136,8 +128,7 @@ bool error_class::print_error_list()
     
     if(ret == false)
     {
-    	//send_string_DMA("#EMPTY-List",true);
-    	send_string_USB("#EMPTY-List",true);
+    	send_string("#EMPTY-List",true);
     }
     return ret;
 }

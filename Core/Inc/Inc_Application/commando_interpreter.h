@@ -22,9 +22,7 @@
 #include <stdlib.h>
 #include "data_recorder.h"
 
-
-extern "C" void send_string_DMA(const char* str, bool new_line);
-extern "C" void send_string_USB(const char* str, bool new_line);
+extern "C" void send_string(const char* str, bool new_line);
 
 
 

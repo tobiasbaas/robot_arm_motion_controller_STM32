@@ -18,8 +18,8 @@
 #include <stdint.h>
 #include <stdio.h>
 
-extern "C" void send_string_DMA(const char* str, bool new_line);
-extern "C" void send_string_USB(const char* str, bool new_line);
+extern "C" void send_string(const char* str, bool new_line);
+
 
 #define MAX_NUM_OF_ERRORS_IN_LIST 20    //define length of the error list
 

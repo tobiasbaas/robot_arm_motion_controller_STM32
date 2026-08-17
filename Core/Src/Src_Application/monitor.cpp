@@ -25,7 +25,7 @@ bool TX_DMA_buff_free = 1;
 void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 {
 	// case end line
-	if(rx_buff[0] == 0x0A)
+		if(rx_buff[0] == 0x0A)
 	{
 		cmd_str[rx_cmd_str_cnt]=0;
 		rx_cmd_str_cnt = 0;
@@ -36,73 +36,77 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 		cmd_str[rx_cmd_str_cnt] = rx_buff[0];
 		rx_cmd_str_cnt++;
 	}
-	// not for USB: HAL_UART_Receive_DMA(&hlpuart1, rx_buff, 1); //You need to toggle a breakpoint on this line!
+
+	#ifndef SEND_OVER_USB
+		HAL_UART_Receive_DMA(&hlpuart1, rx_buff, 1); //You need to toggle a breakpoint on this line!
+	#endif
 }
 
 void HAL_UART_TxCpltCallback(UART_HandleTypeDef *huart)
 {
 	TX_DMA_buff_free = true;
 }
-/**
-  * @brief string send command (DMA) with CR and LF
-  * new_line true = true --> CR and LF is added
-  */
 
-void send_string_DMA(const char* str, bool new_line)
+void send_string(const char* str, bool new_line)
 {
-	uint16_t len = TX_BUFFER_LENGTH;
-	while(TX_DMA_buff_free == false){}	// wait for last transmission is ended
-	for(uint16_t n= 0;n<TX_BUFFER_LENGTH-2;n++ )
-	{
-		if(str[n]  != 0)
+	#ifdef SEND_OVER_USB
+		// send_string_USB(): 
+    	// use global buffer from monitor.h; else uint8_t tx_buff[TX_BUFFER_LENGTH] = {0};
+		uint16_t len = 0;
+
+		for (uint16_t n = 0; n < TX_BUFFER_LENGTH - 2; n++)
 		{
-			tx_buff[n] = str[n];
-		}
-		else
-		{
-			if(new_line == true)
+			if (str[n] != '\0')
 			{
-				//tx_buff[n++] = '\r';	//add a line feed
-				tx_buff[n++] = '\n';	//add a line feed
+				tx_buff[n] = str[n];
 			}
-			len = n;
-			n = TX_BUFFER_LENGTH;
+			else
+			{
+				if (new_line)
+				{
+					tx_buff[n++] = '\n';  // Zeilenumbruch hinzufügen
+				}
+				len = n;
+				break;
+			}
 		}
-	}
-	if(len >0)
-	{
-		TX_DMA_buff_free = false; // new transmission started
-		HAL_UART_Transmit_DMA(&hlpuart1, tx_buff,len);
-	}
-}
 
-//alternativ USB:
-void send_string_USB(const char* str, bool new_line)
-{
-    uint8_t tx_buff[TX_BUFFER_LENGTH] = {0};
-    uint16_t len = 0;
+		if (len > 0)
+		{
+			CDC_Transmit_FS(tx_buff, len);
+		}
 
-    for (uint16_t n = 0; n < TX_BUFFER_LENGTH - 2; n++)
-    {
-        if (str[n] != '\0')
-        {
-            tx_buff[n] = str[n];
-        }
-        else
-        {
-            if (new_line)
-            {
-                tx_buff[n++] = '\n';  // Zeilenumbruch hinzufügen
-            }
-            len = n;
-            break;
-        }
-    }
-
-    if (len > 0)
-    {
-        CDC_Transmit_FS(tx_buff, len);
-    }
+	#else
+		// send_string_DMA():
+		/**
+		* @brief string send command (DMA) with CR and LF
+		* new_line true = true --> CR and LF is added
+		*/
+    	uint16_t len = TX_BUFFER_LENGTH;
+		while(TX_DMA_buff_free == false){}	// wait for last transmission is ended
+		for(uint16_t n= 0;n<TX_BUFFER_LENGTH-2;n++ )
+		{
+			if(str[n]  != 0)
+			{
+				tx_buff[n] = str[n];
+			}
+			else
+			{
+				if(new_line == true)
+				{
+					//tx_buff[n++] = '\r';	//add a line feed
+					tx_buff[n++] = '\n';	//add a line feed
+				}
+				len = n;
+				n = TX_BUFFER_LENGTH;
+			}
+		}
+		if(len >0)
+		{
+			TX_DMA_buff_free = false; // new transmission started
+			HAL_UART_Transmit_DMA(&hlpuart1, tx_buff,len);
+		}
+	#endif
 }
 
 void send_raw_array_DMA(const uint8_t *char_array_ptr, uint16_t len)
@@ -116,7 +120,7 @@ void send_raw_array_DMA(const uint8_t *char_array_ptr, uint16_t len)
 
 void test_monitor()
 {
-	send_string_USB("Hello PDOG!", 1);  // Dummy-Nachricht
+	send_string("Hello PDOG!", 1);  // Dummy-Nachricht
 }
 
 void run_monitor(){
@@ -126,7 +130,6 @@ void run_monitor(){
 	{
 	  // execute CMD
 	  com_inter.interpreter(&cmd_str[0]);
-
 
 	  new_cmd = 0;
 	}

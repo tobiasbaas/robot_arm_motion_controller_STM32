@@ -41,9 +41,7 @@ extern void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart);
 
 extern void HAL_UART_TxCpltCallback(UART_HandleTypeDef *huart);
 
-extern void send_string_DMA(const char* str, bool new_line);
-
-extern void send_string_USB(const char* str, bool new_line);
+extern void send_string(const char* str, bool new_line);
 
 extern void test_monitor();
 extern void run_monitor();

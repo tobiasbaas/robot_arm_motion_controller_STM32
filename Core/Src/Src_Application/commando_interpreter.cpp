@@ -177,9 +177,7 @@ DEV_CLASS ComInt_class::arg2module(char* str)
 
 bool ComInt_class::exit(void)
 {
-
-	//send_string_DMA("Function Call: exit",true);
-	send_string_USB("Function Call: exit",true);
+	send_string("Function Call: exit",true);
 
     return false;
 }
@@ -248,8 +246,7 @@ bool ComInt_class::convert_value_from_string(PARAM_DEV* param)
 		default:
 			ComInt_class::myError->add(COMMAND_MOD, ERR_VALUE_ERR, __FILE__, __LINE__); // ??? Fehler anlegen!
 	}
-	//send_string_DMA(str,true);
-	send_string_USB(str,true);
+	send_string(str,true);
 	return true;
 }
 
@@ -261,8 +258,7 @@ COMMAND SET PARAMETERS --> "SPA"
 bool ComInt_class::set_eeprom_parameter(void)
 {
     bool ret = true;
-    //send_string_DMA("Function Call: set_eeprom_parameter",true);
-    send_string_USB("Function Call: set_eeprom_parameter",true);
+    send_string("Function Call: set_eeprom_parameter",true);
 
 
     // get parameter values from cmd arguments
@@ -544,8 +540,7 @@ bool ComInt_class::print_param_value(PARAM_DEV* param)
 		default:
 			ComInt_class::myError->add(COMMAND_MOD, ERR_VARIABLE_STR_CONV, __FILE__, __LINE__); // ??? Fehler anlegen!
 	}
-	//send_string_DMA(str,true);
-	send_string_USB(str,true);
+	send_string(str,true);
 
 	return true;
 }
@@ -614,18 +609,15 @@ void ComInt_class::print_module_list(void)
 {
 	char str[40] = {0};
 
-	//send_string_DMA("#MODULE LIST:",true);
-	send_string_USB("#MODULE LIST:",true);
+	send_string("#MODULE LIST:",true);
 
 	for(uint16_t i = 0;i<NUM_OF_DEV_CLASSES;i++)
 	{
 		sprintf(str,"%s: %s",this->myError->dev_class_str[i].cmd, this->myError->dev_class_str[i].description);
-		//send_string_DMA(str,true);
-		send_string_USB(str,true);
+		send_string(str,true);
 
 	}
-	//send_string_DMA("#END LIST",true);
-	send_string_USB("#END LIST",true);
+	send_string("#END LIST",true);
 
 }
 
@@ -636,21 +628,16 @@ Print Command List
 */
 void ComInt_class::print_cmd_list(void)
 {
-	//send_string_DMA("#COMMAND LIST:",true);
-	send_string_USB("#COMMAND LIST:",true);
+	send_string("#COMMAND LIST:",true);
 
 	for(uint16_t i = 0;i<MAX_NUM_COMANDS;i++)
 	{
-		//send_string_DMA(this->cmd_tab[i].cmd,false);
-		//send_string_DMA(": ",false);
-		//send_string_DMA(this->cmd_tab[i].description,true);
-		send_string_USB(this->cmd_tab[i].cmd,false);
-		send_string_USB(": ",false);
-		send_string_USB(this->cmd_tab[i].description,true);
+		send_string(this->cmd_tab[i].cmd,false);
+		send_string(": ",false);
+		send_string(this->cmd_tab[i].description,true);
 
 	}
-	//send_string_DMA("#END LIST",true);
-	send_string_USB("#END LIST",true);
+	send_string("#END LIST",true);
 
 }
 
@@ -661,19 +648,12 @@ COMMAND GET DEVICE ID --> "IDN"
 */
 bool ComInt_class::get_dev_id(void)
 {
-
-	//send_string_DMA("HKA - LIS Motion Control Firmware",true);
-	//send_string_DMA("Motion Controller: ",false);
-	//send_string_DMA(CONTROLLER_NAME_STR,true);
-	//send_string_DMA("Version: ",false);
-	//send_string_DMA(VERSION_STR,true);
-	//send_string_DMA(CPY_STR,true);
-	send_string_USB("HKA - LIS Motion Control Firmware",true);
-	send_string_USB("Motion Controller: ",false);
-	send_string_USB(CONTROLLER_NAME_STR,true);
-	send_string_USB("Version: ",false);
-	send_string_USB(VERSION_STR,true);
-	send_string_USB(CPY_STR,true);
+	send_string("HKA - LIS Motion Control Firmware",true);
+	send_string("Motion Controller: ",false);
+	send_string(CONTROLLER_NAME_STR,true);
+	send_string("Version: ",false);
+	send_string(VERSION_STR,true);
+	send_string(CPY_STR,true);
     return true;
 }
 
@@ -712,8 +692,7 @@ bool ComInt_class::qPOS(void)
 
 	sprintf(str,"%4.5f",this->myAxis[this->myCmd.i_instance]->myPos->position);
 
-	//send_string_DMA(str,true);
-	send_string_USB(str,true);
+	send_string(str,true);
 
 
     return ret;
@@ -841,8 +820,7 @@ bool ComInt_class::status(void)
 	{
 		sprintf(str,"*STA: 0x000%x",this->myError->status.all);
 	}
-	//send_string_DMA(str,true);
-	send_string_USB(str,true);
+	send_string(str,true);
 
     return true;
 }
@@ -854,8 +832,7 @@ COMMAND SAVE PARAMETERS TO EPROM --> "SEP"
 */
 bool ComInt_class::get_error_list(void)
 {
-	//send_string_DMA("Function Call: get_error_list",true);
-	send_string_USB("Function Call: get_error_list",true);
+	send_string("Function Call: get_error_list",true);
     ComInt_class::myError->print_error_list();
     return true;
 }

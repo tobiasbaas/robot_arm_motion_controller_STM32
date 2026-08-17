@@ -219,7 +219,7 @@ bool parameter_class::sendParameterHelp(uint16_t* param_id, PARAM_DEV* module_pa
     //check if Module has Parameter
     if(len >1 && len <= 100)
     {
-    	send_string_DMA("#PARAMETER LIST START - ",false);
+    	send_string("#PARAMETER LIST START - ",false);
     	//strcpy(tmp_str,module_parameter[0].description);
 		// copy module name from first parameter description
 		uint16_t len2 = 80;//sizeof(tmp_str);
@@ -235,7 +235,7 @@ bool parameter_class::sendParameterHelp(uint16_t* param_id, PARAM_DEV* module_pa
 			str[j-10] = tmp;
 		}
 		// Send Headline
-		send_string_DMA(str,true);
+		send_string(str,true);
 
     	// run table an get information to send
 		for(uint16_t i=0;i<len;i++)
@@ -251,16 +251,16 @@ bool parameter_class::sendParameterHelp(uint16_t* param_id, PARAM_DEV* module_pa
 				{
 					sprintf(str,"0x%02x (R/W) Type: %s Min: %d, Max: %d # %s",module_parameter[i].adress,  this->param_type_str[module_parameter[i].type],module_parameter[i].minimum, module_parameter[i].maximum, module_parameter[i].description);
 				}
-				send_string_DMA(str,true);  // send parameter info...
+				send_string(str,true);  // send parameter info...
 				ret = true;
 			}
 		}
     }
     else
     {
-    	send_string_DMA("#PARAMETER LIST START - MODULE HAS NO PARAMETER",true); // List end...
+    	send_string("#PARAMETER LIST START - MODULE HAS NO PARAMETER",true); // List end...
     }
-    send_string_DMA("#END LIST",true); // List end...
+    send_string("#END LIST",true); // List end...
     return ret;
 }
 
@@ -418,7 +418,7 @@ bool parameter_class::print_param_value_raw(PARAM_TYPE type, UNION_VALUE value)
 		default:
 			this->myError->add(COMMAND_MOD, ERR_VARIABLE_STR_CONV, __FILE__, __LINE__); // ??? Fehler anlegen!
 	}
-	send_string_DMA(str,true);
+	send_string(str,true);
 	return true;
 }
 

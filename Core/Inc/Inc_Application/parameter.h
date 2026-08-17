@@ -16,7 +16,7 @@
 #include "typedefs.h"
 #include "controller_error.h"
 
-extern "C" void send_string_DMA(const char* str, bool new_line);
+extern "C" void send_string(const char* str, bool new_line);
 
 
 class parameter_class

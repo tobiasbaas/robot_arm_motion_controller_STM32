@@ -19,7 +19,7 @@
 // forward declaration
 class axis_class;
 
-extern "C" void send_string_DMA(const char* str, bool new_line);
+extern "C" void send_string(const char* str, bool new_line);
 extern "C" void send_raw_array_DMA(const uint8_t *char_array_ptr, uint16_t len);
 
 /*

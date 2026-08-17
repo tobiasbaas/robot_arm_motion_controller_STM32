@@ -91,10 +91,7 @@ set_pwm_class*          myPWM_ptr[MAX_NUM_AXIS];
 void SystemClock_Config(void);
 void MX_FREERTOS_Init(void);
 /* USER CODE BEGIN PFP */
-
-//void send_string_DMA(const uint8_t* str);
-void send_string_USB(const char* str, bool new_line);
-
+void send_string(const char* str, bool new_line);
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
@@ -181,8 +178,11 @@ int main(void)
 
   /* USER CODE BEGIN 2 */
 
+  #ifndef SEND_OVER_USB
+    HAL_StatusTypeDef uart_status;
+    uart_status = HAL_UART_Receive_DMA(&hlpuart1, rx_buff, 1);
+  #endif
 
-  // not for USB: HAL_UART_Receive_DMA(&hlpuart1, rx_buff, 1);
 	myParameter.myError = &myError;
 	myDR_ptr = &myDR;	// pointer only for debug reason
 	com_inter.myDR = &myDR;
@@ -212,8 +212,7 @@ int main(void)
 
    myDR.init();
 
-  //send_string_DMA("Startup Controller...");
-  //send_string_USB("Startup Controller...", true);
+  send_string("Startup Controller...", true);
 
    myAxis[1].enabled = true;
    myPID_pos_ptr[1]->servo_on_off(true);
