@@ -48,3 +48,9 @@ CMakeUserPresets.json
 *.swp
 .DS_Store
 Thumbs.db
+
+# ============================================
+# KI
+# ============================================
+KI Sitzungen/
+AGENTS.md

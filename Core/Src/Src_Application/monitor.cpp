@@ -17,24 +17,41 @@ extern "C" ComInt_class com_inter;
 uint8_t rx_buff[RX_BUFFER_LENGTH];
 uint8_t tx_buff[TX_BUFFER_LENGTH]={0}; //ABCDEFGHIJ in ASCII code
 //char cmd_str[CMD_STR_LENGTH] = {0};
-uint16_t rx_cmd_str_cnt = 0;
+volatile uint16_t rx_cmd_str_cnt = 0;
 //bool new_cmd = 0;
-bool TX_DMA_buff_free = 1;
+volatile bool TX_DMA_buff_free = 1;
 
 
 void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 {
-	// case end line
-		if(rx_buff[0] == 0x0A)
+	// Zeilenende bei LF (0x0A) und CR (0x0D) erkennen
+	if((rx_buff[0] == 0x0A) || (rx_buff[0] == 0x0D))
 	{
-		cmd_str[rx_cmd_str_cnt]=0;
-		rx_cmd_str_cnt = 0;
-		new_cmd = true;
+		// Leerzeile (nur CR/LF) nicht als Befehl verarbeiten
+		if(rx_cmd_str_cnt > 0)
+		{
+			cmd_str[rx_cmd_str_cnt]=0;
+			rx_cmd_str_cnt = 0;
+			new_cmd = true;
+		}
+		else
+		{
+			rx_cmd_str_cnt = 0;
+		}
 	}
 	else
 	{
-		cmd_str[rx_cmd_str_cnt] = rx_buff[0];
-		rx_cmd_str_cnt++;
+		// Nur druckbare Zeichen in den Puffer uebernehmen
+		if((rx_buff[0] >= 0x20) && (rx_buff[0] < 0x7F))
+		{
+			// Puffer-Overflow verhindern (Platz fuer Terminator lassen)
+			if(rx_cmd_str_cnt < (CMD_STR_LENGTH - 1))
+			{
+				cmd_str[rx_cmd_str_cnt] = rx_buff[0];
+				rx_cmd_str_cnt++;
+			}
+			// else: Puffer voll, restliche Zeichen der Zeile verwerfen
+		}
 	}
 
 	#ifndef SEND_OVER_USB

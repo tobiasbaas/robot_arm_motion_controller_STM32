@@ -266,15 +266,33 @@ static int8_t CDC_Receive_FS(uint8_t* Buf, uint32_t *Len)
 
 	for (uint32_t i = 0; i < *Len; i++)
 	{
-		if (Buf[i] == 0x0A) // '\n' als Endzeichen
+		// Zeilenende bei LF (0x0A) und CR (0x0D) erkennen
+		if ((Buf[i] == 0x0A) || (Buf[i] == 0x0D))
 		{
-			cmd_str[rx_cmd_str_cnt] = 0;
-			rx_cmd_str_cnt = 0;
-			new_cmd = true;
+			// Leerzeile (nur CR/LF) nicht als Befehl verarbeiten
+			if (rx_cmd_str_cnt > 0)
+			{
+				cmd_str[rx_cmd_str_cnt] = 0;
+				rx_cmd_str_cnt = 0;
+				new_cmd = true;
+			}
+			else
+			{
+				rx_cmd_str_cnt = 0;
+			}
 		}
 		else
 		{
-			cmd_str[rx_cmd_str_cnt++] = Buf[i];
+			// Nur druckbare Zeichen in den Puffer uebernehmen
+			if ((Buf[i] >= 0x20) && (Buf[i] < 0x7F))
+			{
+				// Puffer-Overflow verhindern (Platz fuer Terminator lassen)
+				if (rx_cmd_str_cnt < (CMD_STR_LENGTH - 1))
+				{
+					cmd_str[rx_cmd_str_cnt++] = Buf[i];
+				}
+				// else: Puffer voll, restliche Zeichen der Zeile verwerfen
+			}
 		}
 	}
 	USBD_CDC_SetRxBuffer(&hUsbDeviceFS, &Buf[0]);

@@ -32,13 +32,13 @@ class axis_class
 {
     private:
         /* data */
-        bool refresh_parameter(void);
 
     public:
         axis_class();
         bool init(uint8_t i,error_class* myError,trajectory_class* trajectory, pos_sensor_class* pos_sensor, PID_class* pid_pos, current_control_class* current_control, data_recorder_class* DR, parameter_class* myParameter);
         bool run(void);
         bool setParameter(CMD_STRUCT* cmd);
+        bool refresh_parameter(void);
         bool set_target(float target);
         void enable(void);
         void disable(void);

@@ -45,7 +45,7 @@ class parameter_class
         #define MAX_NUM_PARAMETER_PARM 1
         PARAM_DEV module_parameter[MAX_NUM_PARAMETER_PARM] =
         {
-        	{0x01, _UINT16, MAX_NUM_PARAMETER_PARM, MAX_NUM_PARAMETER_PARM, MAX_NUM_PARAMETER_PARM, "Number of Parameters in Parameter Module"} // every Module needs this parameter with number of
+        	{0x01, _UINT16, MAX_NUM_PARAMETER_PARM, MAX_NUM_PARAMETER_PARM, MAX_NUM_PARAMETER_PARM, true, "Number of Parameters in Parameter Module"} // every Module needs this parameter with number of
         };
         
     private:

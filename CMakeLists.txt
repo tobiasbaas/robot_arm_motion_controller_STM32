@@ -84,3 +84,14 @@ list(REMOVE_ITEM CMAKE_C_IMPLICIT_LINK_LIBRARIES ob)
 target_link_libraries(${CMAKE_PROJECT_NAME}
 stm32cubemx
 )
+
+# --- Fehlerbehebung für ARM/Thumb Linker-Konflikt ---
+target_compile_options(${CMAKE_PROJECT_NAME} PRIVATE 
+    $<$<COMPILE_LANGUAGE:CXX>:-mthumb -mthumb-interwork>
+    $<$<COMPILE_LANGUAGE:C>:-mthumb -mthumb-interwork>
+)
+
+target_link_options(${CMAKE_PROJECT_NAME} PRIVATE 
+    -mthumb 
+    -mthumb-interwork
+)

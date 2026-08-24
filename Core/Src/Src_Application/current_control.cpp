@@ -46,6 +46,12 @@ bool current_control_class::setParameter(CMD_STRUCT* cmd)
 	return ret;
 }
 
+bool current_control_class::refresh_parameter(void)
+{
+	return true;
+}
+
+
 bool current_control_class::setAngle(float angle)
 {
 	mAngle = angle;

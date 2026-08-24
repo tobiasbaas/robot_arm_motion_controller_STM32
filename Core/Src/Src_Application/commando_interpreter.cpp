@@ -5,7 +5,6 @@
 Constructor
 --------------------------------------------------------------
 */
-
 ComInt_class::ComInt_class(error_class* myError_ptr)
 {
     ComInt_class::myError 		= myError_ptr;	//Pointer Error Class
@@ -22,22 +21,25 @@ bool ComInt_class::interpreter(char *str)
 {
     bool ret = false;
 
-    ComInt_class::seperate_cmd(str);
+    ret = ComInt_class::seperate_cmd(str);
 
-    for(int n=0;n<MAX_NUM_COMANDS;n++)
+    if(ret == true)
     {
-        if(strcmp(&this->myCmd.cmd_str[0], ComInt_class::cmd_tab[n].cmd) == 0) // command found...
-        {
-            (this->*cmd_tab[n].meth_fnc)(); //calls function from table
-            n = MAX_NUM_COMANDS;
-            ret = true;
-        }
-    }
-    
-    // Error Command not found
-    if(ret == false)
-    {
-        ComInt_class::myError->add(COMMAND_MOD, ERR_UNKNOWN_CMD, __FILE__, __LINE__); // Unknown CMD
+    	ret = false;	// reset to detect unknown CMD
+    	for(int n=0; n<MAX_NUM_COMANDS; n++)
+		{
+			if(strcmp(&this->myCmd.cmd_str[0], ComInt_class::cmd_tab[n].cmd) == 0) // command found...
+			{
+				(this->*cmd_tab[n].meth_fnc)(); //calls function from table
+				n = MAX_NUM_COMANDS;
+				ret = true;
+			}
+		}
+		// Error Command not found
+		if(ret == false)
+		{
+			ComInt_class::myError->add(COMMAND_MOD, ERR_UNKNOWN_CMD, __FILE__, __LINE__); // Unknown CMD
+		}
     }
     return ret; 
 }
@@ -50,12 +52,12 @@ Additionally, this function gets rid of all characters which are not supported b
 */
 bool ComInt_class::seperate_cmd(char *str)
 {
-    bool ret = true;
+    bool ret = false;
     char sign = 0;
-    uint16_t n = 0;
+    uint16_t number_args = 0;
     uint16_t m = 0;
-    uint16_t cmd_args_cnt = 0;
     uint16_t s_cnt =0;
+    uint16_t str_len = strlen(str);
 
     for(uint16_t i=0;i<CMD_MAX_ARGS+2;i++)
     {
@@ -63,7 +65,8 @@ bool ComInt_class::seperate_cmd(char *str)
         this->myCmd.argument[i][1] = 0;
     }
 
-    for(uint16_t i=0;i<256;i++)
+    // Lese nur innerhalb des Puffers (CMD_STR_LENGTH), nicht fix 256 Bytes
+    for(uint16_t i=0;(i<str_len) && (i<CMD_STR_LENGTH);i++)
     {
         if((str[i]>0x27) && (str[i]< 0x7B))    // not all signs allowed
         {
@@ -78,75 +81,124 @@ bool ComInt_class::seperate_cmd(char *str)
             switch(sign)    // split string to argument list
             {
                 case 0x3A:  // Spacer ":" --> new value pair
-                    this->myCmd.argument[n][m] = 0; // end string array
+                    this->myCmd.argument[number_args][m] = 0; // end string array
                     if(m!=0)
                     {
-                        n++;
-                        if(n >= CMD_MAX_ARGS+2) // too many arguments
+                        number_args++;
+                        if(number_args >= CMD_MAX_ARGS+2) // too many arguments
                         {
-                            i = 256;
+                            i = CMD_STR_LENGTH;
                         }
                         m=0;
                     }
                     break;
 
                 case 0x3B: // semicolon --> end
-                    this->myCmd.argument[n][m] = 0; // end string array
-                    cmd_args_cnt = n; //set number of command arguments
-                    i=256;
+                    this->myCmd.argument[number_args][m] = 0; // end string array
+                    i=CMD_STR_LENGTH;
                     ret = true;
                     break;
 
                 default:
-                    this->myCmd.argument[n][m] = sign;
-                    m++;
+                    // max. 19 Zeichen pro Argument (20. Position bleibt Terminator)
+                    if(m < 19)
+                    {
+                        this->myCmd.argument[number_args][m] = sign;
+                        m++;
+                    }
             }
             // store input string for error handling
             if((sign != 0x0A) && (sign != 0x0D)) // throw out LF and CR
             {
-            	ComInt_class::myError->last_cmd[s_cnt] = sign;
-            	s_cnt++;
+                // last_cmd-Puffer (CMD_STR_LENGTH) nicht ueberlaufen
+                if(s_cnt < CMD_STR_LENGTH)
+                {
+                	ComInt_class::myError->last_cmd[s_cnt] = sign;
+                	s_cnt++;
+                }
             }
         }
     }
+    if(ret == false)
+    {
+    	ComInt_class::myError->add(COMMAND_MOD, ERR_NO_CMD_END, __FILE__, __LINE__); // Unknown CMD
+    	return ret; // negative return, no string end
+    }
     //Terminate CMD-string for error handling
-    ComInt_class::myError->last_cmd[s_cnt] = 0;
+    if(s_cnt < CMD_STR_LENGTH)
+    {
+    	ComInt_class::myError->last_cmd[s_cnt] = 0;
+    }
+    else
+    {
+    	ComInt_class::myError->last_cmd[CMD_STR_LENGTH-1] = 0;
+    }
 
-    this->myCmd.dv_module = NON_MOD;
-    this->myCmd.i_instance = 100;
+    this->myCmd.dv_module = NON_MOD;	// no module
+    this->myCmd.i_instance = 100; 		// no instance
     // prepare for Parameter (not used in all CMDs, but always prepared)
     this->myCmd.i_address = 0;       // Address number
     this->myCmd.i_numerator = 0;
     this->myCmd.i_denominator = 0;
 
-    // copy cmd to myCmd
-    strcpy(&this->myCmd.cmd_str[0],&this->myCmd.argument[0][0]);
-    if(cmd_args_cnt >= 1)
+
+    // copy cmd to myCmd (cmd_str hat nur 4 Zeichen --> begrenzt kopieren)
+    strncpy(&this->myCmd.cmd_str[0],&this->myCmd.argument[0][0],3);
+    this->myCmd.cmd_str[3] = 0;
+
+    // get module and instance
+    if(number_args >= 1)
     {
-        // get module and instance if available
+    	// set ret to false to proof for valid entries...
+    	ret = false;
+
         for(uint16_t i=0;i<8;i++)
         {
-            if(this->myCmd.argument[1][i] == 0x5F)                              //underscore
+            if(this->myCmd.argument[1][i] == 0x5F)  //underscore
             {
-                this->myCmd.module_str[i] = 0;                      // module string end
+                // Modulname immer null-terminieren (module_str hat nur 4 Zeichen)
+                if(i < 4)
+                {
+                	this->myCmd.module_str[i] = 0;                      // module string end
+                }
+                else
+                {
+                	this->myCmd.module_str[3] = 0;   // Name > 3 Zeichen --> kuerzen
+                }
                 // poof for valid instance number
-                if((this->myCmd.argument[1][i+1]>0x2F)&&(this->myCmd.argument[1][i+1]<0x3A))//  only 0 to 9
+                if((i+1 < 20) && (this->myCmd.argument[1][i+1]>0x2F)&&(this->myCmd.argument[1][i+1]<0x3A))//  only 0 to 9
                 {
                     this->myCmd.i_instance = (uint16_t)(this->myCmd.argument[1][i+1] - 0x30);
+					if(this->myCmd.i_instance < MAX_NUM_AXIS)	// NEW: check instance range
+					{
+						ret = true; // module and instance found...
+					}
+					else
+					{
+						ComInt_class::myError->add(COMMAND_MOD, ERR_UNKNOWN_INSTANCE, __FILE__, __LINE__); // instance out of range
+						ret = false;
+					}
                 }
                 i=8;
             }
             else
             {
-                this->myCmd.module_str[i] = this->myCmd.argument[1][i];
+                if(i < 4)
+                {
+                	this->myCmd.module_str[i] = this->myCmd.argument[1][i];
+                }
                 if(this->myCmd.argument[1][i] == 0)                                     //string end
                 {
                     i=8;
+                    ret = false;
                 }
             }
         }
-        // get module number
-        this->myCmd.dv_module = ComInt_class::arg2module(&this->myCmd.module_str[0]);
+        if(ret == true)
+        {
+        	// get module number
+        	this->myCmd.dv_module = ComInt_class::arg2module(&this->myCmd.module_str[0]);
+        }
     }
     return ret; // negative return, no string end
 }
@@ -175,10 +227,19 @@ DEV_CLASS ComInt_class::arg2module(char* str)
     return module;
 }
 
+/*
+--------------------------------------------------------------
+Select FLASH address depending on axis instance
+--------------------------------------------------------------
+*/
+uint32_t ComInt_class::flash_addr_axis(uint8_t instance, uint32_t addr_a1, uint32_t addr_a2)
+{
+	return (instance == 0) ? addr_a1 : addr_a2;
+}
+
 bool ComInt_class::exit(void)
 {
-	send_string("Function Call: exit",true);
-
+	send_string("Function Call: exit", true);
     return false;
 }
 
@@ -207,6 +268,7 @@ void ComInt_class::cpy_CMD_arguments_4_parameters(void)
 print parameter value
 --------------------------------------------------------------
  _UINT64, , _UINT16, _INT64, _INT32, _INT16, _FLOAT, _DOUBLE, _STRING, _BOOL, _INIT, POS_INT
+
  */
 bool ComInt_class::convert_value_from_string(PARAM_DEV* param)
 {
@@ -250,56 +312,65 @@ bool ComInt_class::convert_value_from_string(PARAM_DEV* param)
 	return true;
 }
 
+
 /*
 --------------------------------------------------------------
-COMMAND SET PARAMETERS --> "SPA"
+COMMAND SET EEPROM PARAMETERS --> "SPE"
 --------------------------------------------------------------
 */
 bool ComInt_class::set_eeprom_parameter(void)
 {
     bool ret = true;
-    send_string("Function Call: set_eeprom_parameter",true);
 
-
-    // get parameter values from cmd arguments
+	// get parameter values from cmd arguments
     ComInt_class::cpy_CMD_arguments_4_parameters();
 
     switch(this->myCmd.dv_module)
     {
 		case NON_MOD:
-
+			ComInt_class::myError->add(COMMAND_MOD, ERR_MOD_NO_PAM, __FILE__, __LINE__); // Module has No Parameter
 			break;
+
         case SYSTEM_MOD:
-
+        	this->myParameter->write_eeprom_parameter(this->mySystem->module_parameter , ADDR_FLASH_PAGE_SYSTEM);
             break;
+
         case DATARECORDER_MOD:
-
+        	this->myParameter->write_eeprom_parameter(this->myDR->module_parameter , ADDR_FLASH_DRC);
             break;
+
         case AXIS_MOD:
-
-        	//ret = this->myParameter->setParameter(&this->return_parameter, this->myCmd.address_ptr, this->myAxis[this->myCmd.i_instance]->module_parameter);
+        	this->myParameter->write_eeprom_parameter(this->myAxis[this->myCmd.i_instance]->module_parameter , this->flash_addr_axis(this->myCmd.i_instance, ADDR_FLASH_A1, ADDR_FLASH_A2));
             break;
+
         case MOTION_PID_MOD:
-
+        	this->myParameter->write_eeprom_parameter(this->myAxis[this->myCmd.i_instance]->myPid_Pos->module_parameter , this->flash_addr_axis(this->myCmd.i_instance, ADDR_FLASH_A1_PID_POS, ADDR_FLASH_A2_PID_POS));
             break;
+
         case C_PID_MOD:
-
+        	this->myParameter->write_eeprom_parameter(this->myAxis[this->myCmd.i_instance]->myCurrent_Control->module_parameter , this->flash_addr_axis(this->myCmd.i_instance, ADDR_FLASH_A1_CUR_CTL, ADDR_FLASH_A2_CUR_CTL));
             break;
+
         case ENCODER_MOD:
-
+        	this->myParameter->write_eeprom_parameter(this->myAxis[this->myCmd.i_instance]->myPos->module_parameter , this->flash_addr_axis(this->myCmd.i_instance, ADDR_FLASH_A1_POS, ADDR_FLASH_A2_POS));
             break;
+
         case TRAJECTORY_MOD:
-
+        	this->myParameter->write_eeprom_parameter(this->myAxis[this->myCmd.i_instance]->myTrajectory->module_parameter , this->flash_addr_axis(this->myCmd.i_instance, ADDR_FLASH_A1_TRJ, ADDR_FLASH_A2_TRJ));
             break;
-        case PWM_MOD:
 
-            break;
+        case ERROR_MOD:
+        	ComInt_class::myError->add(COMMAND_MOD, ERR_MOD_NO_PAM, __FILE__, __LINE__); // Module has No Parameter
+        	break;
+
         case PARAMETER_MOD:
-            //ret = this->myParameter->setParameter(&this->return_parameter, this->myCmd.i_address, this->myParameter->module_parameter);
+        	ComInt_class::myError->add(COMMAND_MOD, ERR_MOD_NO_PAM, __FILE__, __LINE__); // Module has No Parameter
             break;
-        case COMMAND_MOD:
 
+        case COMMAND_MOD:
+        	ComInt_class::myError->add(COMMAND_MOD, ERR_MOD_NO_PAM, __FILE__, __LINE__); // Module has No Parameter
             break;
+
         default:
             ComInt_class::myError->add(COMMAND_MOD, ERR_UNKNOWN_MOD_ID, __FILE__, __LINE__); // Unknown Module Identifier
             ret = false;
@@ -309,7 +380,81 @@ bool ComInt_class::set_eeprom_parameter(void)
 
 /*
 --------------------------------------------------------------
-COMMAND SET PARAMETER --> "SPA"
+COMMAND RPE and GPE --> "Reload or Read EEPROM Parameter "
+--------------------------------------------------------------
+*/
+bool ComInt_class::get_eeprom_parameter(void)
+{
+    bool ret = true;
+
+    int print = strcmp(this->myCmd.cmd_str,"RPE");
+
+	// get parameter values from cmd arguments
+    ComInt_class::cpy_CMD_arguments_4_parameters();
+
+    switch(this->myCmd.dv_module)
+    {
+		case NON_MOD:
+			ComInt_class::myError->add(COMMAND_MOD, ERR_MOD_NO_PAM, __FILE__, __LINE__); // Module has No Parameter
+			break;
+
+        case SYSTEM_MOD:
+        	this->myParameter->read_eeprom_parameter(this->mySystem->module_parameter , ADDR_FLASH_PAGE_SYSTEM, print);
+        	this->mySystem->refresh_parameter();
+            break;
+
+        case DATARECORDER_MOD:
+        	this->myParameter->read_eeprom_parameter(this->myDR->module_parameter , ADDR_FLASH_DRC, print);
+        	this->myDR->refresh_parameter();
+            break;
+
+        case AXIS_MOD:
+        	this->myParameter->read_eeprom_parameter(this->myAxis[this->myCmd.i_instance]->module_parameter , this->flash_addr_axis(this->myCmd.i_instance, ADDR_FLASH_A1, ADDR_FLASH_A2), print);
+        	this->myAxis[this->myCmd.i_instance]->refresh_parameter();
+            break;
+
+        case MOTION_PID_MOD:
+        	this->myParameter->read_eeprom_parameter(this->myAxis[this->myCmd.i_instance]->myPid_Pos->module_parameter, this->flash_addr_axis(this->myCmd.i_instance, ADDR_FLASH_A1_PID_POS, ADDR_FLASH_A2_PID_POS), print);
+        	this->myAxis[this->myCmd.i_instance]->myPid_Pos->refresh_parameter();
+        	break;
+
+        case C_PID_MOD:
+        	this->myParameter->read_eeprom_parameter(this->myAxis[this->myCmd.i_instance]->myCurrent_Control->module_parameter, this->flash_addr_axis(this->myCmd.i_instance, ADDR_FLASH_A1_CUR_CTL, ADDR_FLASH_A2_CUR_CTL), print);
+        	this->myAxis[this->myCmd.i_instance]->myCurrent_Control->refresh_parameter();
+            break;
+
+        case ENCODER_MOD:
+        	this->myParameter->read_eeprom_parameter(this->myAxis[this->myCmd.i_instance]->myPos->module_parameter, this->flash_addr_axis(this->myCmd.i_instance, ADDR_FLASH_A1_POS, ADDR_FLASH_A2_POS), print);
+        	this->myAxis[this->myCmd.i_instance]->myPos->refresh_parameter();
+            break;
+
+        case TRAJECTORY_MOD:
+        	this->myParameter->read_eeprom_parameter(this->myAxis[this->myCmd.i_instance]->myTrajectory->module_parameter, this->flash_addr_axis(this->myCmd.i_instance, ADDR_FLASH_A1_TRJ, ADDR_FLASH_A2_TRJ), print);
+        	this->myAxis[this->myCmd.i_instance]->myTrajectory->refresh_parameter();
+            break;
+
+        case PARAMETER_MOD:
+        	ComInt_class::myError->add(COMMAND_MOD, ERR_MOD_NO_PAM, __FILE__, __LINE__); // Module has No Parameter
+            break;
+
+        case COMMAND_MOD:
+        	ComInt_class::myError->add(COMMAND_MOD, ERR_MOD_NO_PAM, __FILE__, __LINE__); // Module has No Parameter
+            break;
+
+        case ERROR_MOD:
+        	ComInt_class::myError->add(COMMAND_MOD, ERR_MOD_NO_PAM, __FILE__, __LINE__); // Module has No Parameter
+        	break;
+
+        default:
+            ComInt_class::myError->add(COMMAND_MOD, ERR_UNKNOWN_MOD_ID, __FILE__, __LINE__); // Unknown Module Identifier
+            ret = false;
+    }
+    return ret;
+}
+
+/*
+--------------------------------------------------------------
+COMMAND SET PARAMETER --> "SPV"
 --------------------------------------------------------------
 */
 bool ComInt_class::set_parameter(void)
@@ -325,7 +470,7 @@ bool ComInt_class::set_parameter(void)
 			ComInt_class::myError->add(COMMAND_MOD, ERR_MOD_NO_PAM, __FILE__, __LINE__); // Module has No Parameter
 			break;
         case SYSTEM_MOD:
-        	ComInt_class::myError->add(COMMAND_MOD, ERR_MOD_NO_PAM, __FILE__, __LINE__); // Module has No Parameter
+        	ret = this->mySystem->setParameter(&this->myCmd);
             break;
         case DATARECORDER_MOD:
         	ret = this->myDR->setParameter(&this->myCmd);
@@ -345,90 +490,105 @@ bool ComInt_class::set_parameter(void)
         case TRAJECTORY_MOD:
         	ret = this->myAxis[this->myCmd.i_instance]->myTrajectory->setParameter(&this->myCmd);
             break;
-        case PWM_MOD:
-        	ComInt_class::myError->add(COMMAND_MOD, ERR_MOD_NO_PAM, __FILE__, __LINE__); // Module has No Parameter
-            break;
         case PARAMETER_MOD:
-        	ret = this->myParameter->setParameter(&this->myCmd,this->myParameter->module_parameter);
+        	//ret = this->myParameter->setParameter(&this->myCmd,this->myParameter->module_parameter);
+        	ComInt_class::myError->add(COMMAND_MOD, ERR_MOD_NO_PAM, __FILE__, __LINE__); // Module has No Parameter
             break;
         case COMMAND_MOD:
         	ComInt_class::myError->add(COMMAND_MOD, ERR_MOD_NO_PAM, __FILE__, __LINE__); // Module has No Parameter
             break;
+        case ERROR_MOD:
+        	ComInt_class::myError->add(COMMAND_MOD, ERR_MOD_NO_PAM, __FILE__, __LINE__); // Module has No Parameter
+			break;
         default:
             ComInt_class::myError->add(COMMAND_MOD, ERR_UNKNOWN_MOD_ID, __FILE__, __LINE__); // Unknown Module Identifier
             ret = false;
+    }
+
+    // Fehler sichtbar machen, da der Interpreter den Rueckgabewert sonst ignoriert
+    if(ret == false)
+    {
+    	send_string("#PARAMETER SET FAILED (see error list)",true);
     }
     return ret;
 }
 
 /*
 --------------------------------------------------------------
-COMMAND SET PARAMETER --> "SPA"
+COMMAND GET PARAMETER LIST --> "GPL"
 --------------------------------------------------------------
 */
 bool ComInt_class::get_parameter_hlp(void)
 {
     bool ret 		= true;
-    bool no_param 	= false;
 
-    PARAM_DEV*		param_ptr;
+    PARAM_DEV*		param_ptr = NULL;
     // get parameter values from cmd arguments
     ComInt_class::cpy_CMD_arguments_4_parameters();
 
     switch(this->myCmd.dv_module)
     {
 		case NON_MOD:
-			no_param = true;
+			// Module has No Parameter
+	    	send_string("#MODULE HAS NO Parameter",true);
+	    	send_string("#END LIST",true);
+
 			break;
         case SYSTEM_MOD:
-        	no_param = true;
+        	param_ptr = this->mySystem->module_parameter;
             break;
+
         case DATARECORDER_MOD:
         	param_ptr = this->myDR->module_parameter;
             break;
+
         case AXIS_MOD:
-        	param_ptr = this->myAxis[0]->module_parameter;
+        	param_ptr = this->myAxis[this->myCmd.i_instance]->module_parameter;
             break;
+
         case MOTION_PID_MOD:
-        	param_ptr = this->myAxis[0]->myPid_Pos->module_parameter;
+        	param_ptr = this->myAxis[this->myCmd.i_instance]->myPid_Pos->module_parameter;
             break;
+
         case C_PID_MOD:
-        	param_ptr = this->myAxis[0]->myCurrent_Control->module_parameter;
+        	param_ptr = this->myAxis[this->myCmd.i_instance]->myCurrent_Control->module_parameter;
             break;
+
         case ENCODER_MOD:
-        	param_ptr = this->myAxis[0]->myPos->module_parameter;
+        	param_ptr = this->myAxis[this->myCmd.i_instance]->myPos->module_parameter;
             break;
+
         case TRAJECTORY_MOD:
-        	param_ptr = this->myAxis[0]->myTrajectory->module_parameter;
+        	param_ptr = this->myAxis[this->myCmd.i_instance]->myTrajectory->module_parameter;
             break;
-        case PWM_MOD:
-        	no_param = true;
-            break;
+
         case PARAMETER_MOD:
         	param_ptr = this->myParameter->module_parameter;
             break;
+
         case COMMAND_MOD:
-        	no_param = true;
+        	param_ptr = this->module_parameter;
             break;
+
+        case ERROR_MOD:
+        	param_ptr = this->myError->module_parameter;
+        	break;
+
         default:
             ComInt_class::myError->add(COMMAND_MOD, ERR_UNKNOWN_MOD_ID, __FILE__, __LINE__); // Unknown Module Identifier
             ret = false;
     }
-    if(no_param == false)
+    if(param_ptr != NULL)
     {
     	ret = this->myParameter->sendParameterHelp(&this->myCmd.i_address,param_ptr);
     }
-    else
-    {
-    	ComInt_class::myError->add(COMMAND_MOD, ERR_MOD_NO_PAM, __FILE__, __LINE__); // Module has No Parameter
-    }
-
     return ret;
 }
 
+
 /*
 --------------------------------------------------------------
-COMMAND GET PARAMETERS --> "GPA"
+COMMAND GET PARAMETERS --> "GPV"
 --------------------------------------------------------------
 */
 bool ComInt_class::get_parameter(void)
@@ -445,7 +605,7 @@ bool ComInt_class::get_parameter(void)
 			no_param = true;
 			break;
         case SYSTEM_MOD:
-        	no_param = true;
+        	modul_parameter_ptr = this->mySystem->module_parameter;
             break;
         case DATARECORDER_MOD:
         	modul_parameter_ptr = this->myDR->module_parameter;
@@ -465,15 +625,18 @@ bool ComInt_class::get_parameter(void)
         case TRAJECTORY_MOD:
         	modul_parameter_ptr = this->myAxis[this->myCmd.i_instance]->myTrajectory->module_parameter_ptr;
             break;
-        case PWM_MOD:
-        	no_param = true;
-            break;
         case PARAMETER_MOD:
-        	modul_parameter_ptr = this->myParameter->module_parameter;
+        	//modul_parameter_ptr = this->myParameter->module_parameter;
+        	no_param = true; 		// actually no parameters in moule
             break;
         case COMMAND_MOD:
-        	no_param = true;
+        	//modul_parameter_ptr = this->module_parameter;
+        	no_param = true; 		// actually no parameters in moule
             break;
+        case ERROR_MOD:
+        	//modul_parameter_ptr = this->myError->module_parameter;
+        	no_param = true;		// actually no parameters in moule
+        	break;
         default:
             ComInt_class::myError->add(COMMAND_MOD, ERR_UNKNOWN_MOD_ID, __FILE__, __LINE__); // Unknown Module Identifier
             ret = false;
@@ -485,64 +648,8 @@ bool ComInt_class::get_parameter(void)
     else
     {
     	ret = this->myParameter->getParameter(&this->myCmd.i_address, modul_parameter_ptr);
-    	if(ret == true)
-    	{
-    		ComInt_class::print_param_value(&this->return_parameter);
-    	}
     }
     return ret;
-}
-
-/*
---------------------------------------------------------------
-pront parameter value
---------------------------------------------------------------
- _UINT64, , _UINT16, _INT64, _INT32, _INT16, _FLOAT, _DOUBLE, _STRING, _BOOL, _INIT, POS_INT
- */
-bool ComInt_class::print_param_value(PARAM_DEV* param)
-{
-	char str[100];
-	long int tmp = 0;
-	switch(param->type)
-	{
-		case _BOOL:
-			sprintf(str,"%u",(uint16_t)param->value._bool);
-			break;
-		case _UINT64:
-			sprintf(str,"%u",param->value.ui64);
-			break;
-		case _UINT16:
-			sprintf(str,"%u",param->value.ui16);
-			break;
-		case _UINT32:
-			sprintf(str,"%u",param->value.ui32);
-			break;
-		case _INT64:
-			sprintf(str,"%ld",param->value.i64);
-			break;
-		case _INT16:
-			sprintf(str,"%d",param->value.i16);
-			break;
-		case _INT32:
-			sprintf(str,"%d",param->value.i32);
-			break;
-		case _DOUBLE:
-			sprintf(str,"%5.10f",param->value.d64);
-			break;
-		case _FLOAT:
-			sprintf(str,"%4.5f",param->value.f32);
-			break;
-		case POS_INT:
-			//tmp = (param->value.i64 * param->numerator)/param->denominator;
-			tmp = param->value.i64;
-			sprintf(str,"%ld",tmp);
-			break;
-		default:
-			ComInt_class::myError->add(COMMAND_MOD, ERR_VARIABLE_STR_CONV, __FILE__, __LINE__); // ??? Fehler anlegen!
-	}
-	send_string(str,true);
-
-	return true;
 }
 
 /*
@@ -559,39 +666,47 @@ bool ComInt_class::help(void)
     	case NON_MOD:
     		this->print_cmd_list();
     		break;
+
         case SYSTEM_MOD:
         	this->print_module_list();
             break;
+
         case DATARECORDER_MOD:
         	ret = this->myDR->send_DR_hlp();
             break;
+
         case AXIS_MOD:
         	ComInt_class::myError->add(COMMAND_MOD, ERR_MOD_NO_HLP, __FILE__, __LINE__); // Module has no help entries
             break;
+
         case MOTION_PID_MOD:
         	ComInt_class::myError->add(COMMAND_MOD, ERR_MOD_NO_HLP, __FILE__, __LINE__); // Module has no help entries
             break;
+
         case C_PID_MOD:
         	ComInt_class::myError->add(COMMAND_MOD, ERR_MOD_NO_HLP, __FILE__, __LINE__); // Module has no help entries
             break;
+
         case ENCODER_MOD:
         	ComInt_class::myError->add(COMMAND_MOD, ERR_MOD_NO_HLP, __FILE__, __LINE__); // Module has no help entries
             break;
+
         case TRAJECTORY_MOD:
         	ComInt_class::myError->add(COMMAND_MOD, ERR_MOD_NO_HLP, __FILE__, __LINE__); // Module has no help entries
             break;
-        case PWM_MOD:
-        	ComInt_class::myError->add(COMMAND_MOD, ERR_MOD_NO_HLP, __FILE__, __LINE__); // Module has no help entries
-            break;
+
         case PARAMETER_MOD:
         	ComInt_class::myError->add(COMMAND_MOD, ERR_MOD_NO_HLP, __FILE__, __LINE__); // Module has no help entries
             break;
+
         case COMMAND_MOD:
         	this->print_cmd_list();
             break;
+
         case ERROR_MOD:
         	this->myError->print_error_ids();
             break;
+
         default:
             this->myError->add(COMMAND_MOD, ERR_UNKNOWN_MOD_ID, __FILE__, __LINE__); // Unknown Module Identifier
             ret = false;
@@ -610,16 +725,49 @@ void ComInt_class::print_module_list(void)
 	char str[40] = {0};
 
 	send_string("#MODULE LIST:",true);
-
 	for(uint16_t i = 0;i<NUM_OF_DEV_CLASSES;i++)
 	{
 		sprintf(str,"%s: %s",this->myError->dev_class_str[i].cmd, this->myError->dev_class_str[i].description);
 		send_string(str,true);
-
 	}
 	send_string("#END LIST",true);
-
 }
+
+/*
+--------------------------------------------------------------
+Reboot CMD
+--------------------------------------------------------------
+*/
+bool ComInt_class::reboot(void)
+{
+	send_string("#USER SYSTEM REBOOT",true);
+	HAL_Delay(500);
+	NVIC_SystemReset();
+	return true;
+}
+
+/*
+--------------------------------------------------------------
+Reboot CMD
+--------------------------------------------------------------
+*/
+bool ComInt_class::clear_FLASH(void)
+{
+	// get parameter values from cmd arguments
+    ComInt_class::cpy_CMD_arguments_4_parameters();
+
+	send_string("#USER FLASH EASE !!!!",true);
+	if((this->myCmd.dv_module == SYSTEM_MOD) && (this->myCmd.i_address  == 1234 ))
+	{
+		this->myParameter->clear_parameter_flash();
+	}
+	else
+	{
+		send_string("#FLASH EASE FAILD",true);
+	}
+	return true;
+}
+
 
 /*
 --------------------------------------------------------------
@@ -629,18 +777,14 @@ Print Command List
 void ComInt_class::print_cmd_list(void)
 {
 	send_string("#COMMAND LIST:",true);
-
 	for(uint16_t i = 0;i<MAX_NUM_COMANDS;i++)
 	{
 		send_string(this->cmd_tab[i].cmd,false);
 		send_string(": ",false);
 		send_string(this->cmd_tab[i].description,true);
-
 	}
 	send_string("#END LIST",true);
-
 }
-
 /*
 --------------------------------------------------------------
 COMMAND GET DEVICE ID --> "IDN"
@@ -648,15 +792,20 @@ COMMAND GET DEVICE ID --> "IDN"
 */
 bool ComInt_class::get_dev_id(void)
 {
+	char str[20] = {0};
 	send_string("HKA - LIS Motion Control Firmware",true);
-	send_string("Motion Controller: ",false);
+	send_string("# Motion Controller Type: ",false);
 	send_string(CONTROLLER_NAME_STR,true);
-	send_string("Version: ",false);
+	send_string("# Name: ",false);
+	send_string(this->mySystem->device_name,true);
+	// Serial Number
+	sprintf(str,"Serial Number: %d",this->mySystem->device_serial_number);
+	send_string(str,true);
+	send_string("Firmware Version: ",false);
 	send_string(VERSION_STR,true);
 	send_string(CPY_STR,true);
     return true;
 }
-
 /*
 --------------------------------------------------------------
 COMMAND MOV AXIS --> "MOV"
@@ -682,6 +831,31 @@ bool ComInt_class::mov(void)
 
 /*
 --------------------------------------------------------------
+COMMAND MOV AXIS --> "MVR"
+--------------------------------------------------------------
+*/
+bool ComInt_class::mvr(void)
+{
+	bool ret = true;
+	char * p;
+
+	float target = strtof(&this->myCmd.argument[2][0], & p);
+	if ( * p != 0 ) { // Address conversion failed
+		ComInt_class::myError->add(COMMAND_MOD, ERR_UNKNOWN_MOD_ID, __FILE__, __LINE__); // 	{8, "Unknown Parameter ID"
+		ret = false;
+	}
+	else
+	{
+		float new_target = target + this->myAxis[this->myCmd.i_instance]->myTrajectory->setpoint;
+		this->myAxis[this->myCmd.i_instance]->myTrajectory->set_target(new_target);
+		this->myDR->trigger_start(DR_TGR_MOV);
+	}
+    return ret;
+}
+
+
+/*
+--------------------------------------------------------------
 COMMAND MOV AXIS --> "MOV"
 --------------------------------------------------------------
 */
@@ -690,10 +864,15 @@ bool ComInt_class::qPOS(void)
 	bool ret = true;
 	char str[20];
 
-	sprintf(str,"%4.5f",this->myAxis[this->myCmd.i_instance]->myPos->position);
-
-	send_string(str,true);
-
+	if(this->myCmd.i_instance == 100) // instance missing
+	{
+		ComInt_class::myError->add(COMMAND_MOD, ERR_UNKNOWN_INSTANCE, __FILE__, __LINE__); // 	{8, "Module instance"
+	}
+	else
+	{
+		sprintf(str,"%4.5f",this->myAxis[this->myCmd.i_instance]->myPos->position);
+		send_string(str,true);
+	}
 
     return ret;
 }
@@ -727,6 +906,8 @@ bool ComInt_class::enable_disable_axis(void)
     return ret;
 }
 
+
+
 /*
 --------------------------------------------------------------
 COMMAND MOV AXIS --> "MOV"
@@ -749,6 +930,8 @@ bool ComInt_class::servo_on_off(void)
 	return ret;
 }
 
+
+
 /*
 --------------------------------------------------------------
 COMMAND START RECORDING --> "REC"
@@ -760,6 +943,7 @@ bool ComInt_class::rec(void)
     return true;
 }
 
+
 /*
 --------------------------------------------------------------
 COMMAND START RECORDING --> "REC"
@@ -768,9 +952,23 @@ COMMAND START RECORDING --> "REC"
 bool ComInt_class::run_current_loop(void)
 {
 	bool ret = true;
+	char * p;
 
+	float current = strtof(&this->myCmd.argument[2][0], & p);
+	if ( * p != 0 ) { // Address conversion failed
+		ComInt_class::myError->add(COMMAND_MOD, ERR_UNKNOWN_MOD_ID, __FILE__, __LINE__); // 	{8, "Unknown Parameter ID"
+		ret = false;
+	}
+	else
+	{
+		//this->myAxis[this->myCmd.i_instance]->myCurrent_Control->start_current_run(current);
+		this->myDR->trigger_start(DR_TGR_MOV);
+	}
 	return ret;
 }
+
+
+
 
 /*
 --------------------------------------------------------------
@@ -779,9 +977,18 @@ COMMAND Find Phase Algorithm start
 */
 bool ComInt_class::find_phase(void)
 {
-
+	if(this->myAxis[this->myCmd.i_instance]->enabled == true)
+	{
+		//this->myAxis[this->myCmd.i_instance]->myCurrent_Control->start_phase_finding();
+	}
+	else
+	{
+		ComInt_class::myError->add(COMMAND_MOD, ERR_AXS_DISABLED, __FILE__, __LINE__); // 	AXIS Disabled"
+	}
     return true;
 }
+
+
 
 /*
 --------------------------------------------------------------
@@ -821,9 +1028,10 @@ bool ComInt_class::status(void)
 		sprintf(str,"*STA: 0x000%x",this->myError->status.all);
 	}
 	send_string(str,true);
-
     return true;
 }
+
+
 
 /*
 --------------------------------------------------------------
@@ -844,9 +1052,10 @@ COMMAND Start Current Loop Test FOC --> "CLT"
 */
 bool ComInt_class::start_current_test(void)
 {
-
+	//this->myAxis[this->myCmd.i_instance]->myCurrent_Control->start_current_loop_test();
     return true;
 }
+
 
 /*
 --------------------------------------------------------------
@@ -855,9 +1064,10 @@ COMMAND Start SVM Test --> "SVT"
 */
 bool ComInt_class::start_svm_test(void)
 {
-
+	//this->myAxis[this->myCmd.i_instance]->myCurrent_Control->start_svm_test();
     return true;
 }
+
 
 /*
 --------------------------------------------------------------
@@ -881,6 +1091,8 @@ bool ComInt_class::stop(void)
     return true;
 }
 
+
+
 /*
 --------------------------------------------------------------
 COMMAND READ RECORD TABLE --> "RRT"
@@ -889,6 +1101,17 @@ COMMAND READ RECORD TABLE --> "RRT"
 bool ComInt_class::read_record_table(void)
 {
 	this->myDR->send_data();
+    return true;
+}
+
+/*NEW
+--------------------------------------------------------------
+COMMAND READ RECORD TABLE BINARY --> "RTB"
+--------------------------------------------------------------
+*/
+bool ComInt_class::read_record_table_binary(void)
+{
+	this->myDR->send_data_binary();
     return true;
 }
 

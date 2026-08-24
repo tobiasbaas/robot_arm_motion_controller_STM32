@@ -42,11 +42,10 @@ class current_control_class : public parameter_class
 
 		float mAngle = 0.0;
 
-		bool refresh_parameter(void);
-
 	public:
 		current_control_class();
 		bool setParameter(CMD_STRUCT* cmd);
+		bool refresh_parameter(void);
 		bool run(void);
 		void init(axis_class* Axis_ptr, parameter_class* myParameter_ptr, error_class* myError_ptr, set_pwm_class* myPWM_ptr, trajectory_class* trajectory);
 		bool setAngle(float angle);

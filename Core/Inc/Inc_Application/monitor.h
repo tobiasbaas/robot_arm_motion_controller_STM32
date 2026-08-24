@@ -25,10 +25,9 @@ extern "C" {
 extern uint8_t rx_buff[RX_BUFFER_LENGTH];
 extern uint8_t tx_buff[TX_BUFFER_LENGTH];
 extern char cmd_str[CMD_STR_LENGTH];
-extern uint16_t rx_cmd_str_cnt;
-extern bool new_cmd;
-extern bool TX_DMA_buff_free;
-
+extern volatile uint16_t rx_cmd_str_cnt;
+extern volatile bool new_cmd;
+extern volatile bool TX_DMA_buff_free;
 
 extern UART_HandleTypeDef hlpuart1;
 extern DMA_HandleTypeDef hdma_lpuart1_rx;

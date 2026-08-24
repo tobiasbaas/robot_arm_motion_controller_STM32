@@ -65,7 +65,7 @@
 TIM_OC_InitTypeDef sEmulConfigOC;
 
 char cmd_str[CMD_STR_LENGTH] = {0};
-bool new_cmd = false;
+volatile bool new_cmd = false;
 
 uint8_t axis_to_run = 0;
 uint64_t servo_cnt = 0;
@@ -103,6 +103,8 @@ set_pwm_class			myPWM[MAX_NUM_AXIS];
 error_class 			myError;
 
 parameter_class 	myParameter;
+
+system_class 		mySystem(&myParameter);
 
 ComInt_class 			com_inter(&myError);
 
@@ -184,9 +186,13 @@ int main(void)
   #endif
 
 	myParameter.myError = &myError;
+
 	myDR_ptr = &myDR;	// pointer only for debug reason
+
+
 	com_inter.myDR = &myDR;
 	com_inter.myParameter	= &myParameter;
+  com_inter.mySystem = &mySystem;
 
 
    // Initialization of axis modules
@@ -210,9 +216,11 @@ int main(void)
  	  myCurrent_Control[i] = &current_control[i];
    }
 
+
+   mySystem.init();
    myDR.init();
 
-  send_string("Startup Controller...", true);
+  //send_string("Startup Controller...", true);
 
    myAxis[1].enabled = true;
    myPID_pos_ptr[1]->servo_on_off(true);

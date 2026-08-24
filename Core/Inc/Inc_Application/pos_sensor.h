@@ -25,12 +25,12 @@ class pos_sensor_class
 		axis_class* 		myAxis;
 		parameter_class* 	myParameter;
 		error_class* 		myError;
-		bool refresh_parameter(void);
 
 	public:
 		pos_sensor_class();
 
 		bool setParameter(CMD_STRUCT* cmd);
+		bool refresh_parameter(void);
 		bool get_position(void);
 		bool get_stepper_position(void);
 		bool get_value_AB(void);

@@ -59,21 +59,21 @@ osThreadId_t defaultTaskHandle;
 const osThreadAttr_t defaultTask_attributes = {
   .name = "defaultTask",
   .priority = (osPriority_t) osPriorityNormal,
-  .stack_size = 128 * 4
+  .stack_size = 256 * 4
 };
 /* Definitions for canopen */
 osThreadId_t canopenHandle;
 const osThreadAttr_t canopen_attributes = {
   .name = "canopen",
   .priority = (osPriority_t) osPriorityRealtime,
-  .stack_size = 128 * 4
+  .stack_size = 512 * 4
 };
 /* Definitions for IBNusbTaskHandl */
 osThreadId_t IBNusbTaskHandlHandle;
 const osThreadAttr_t IBNusbTaskHandl_attributes = {
   .name = "IBNusbTaskHandl",
   .priority = (osPriority_t) osPriorityLow,
-  .stack_size = 128 * 4
+  .stack_size = 1024 * 4
 };
 
 /* Private function prototypes -----------------------------------------------*/

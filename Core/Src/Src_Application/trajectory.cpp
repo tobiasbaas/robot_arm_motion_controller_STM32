@@ -136,7 +136,13 @@ bool trajectory_class::calc(void)
 		trajectory_class::ont 		= false;
 
 		//  aktueller Bremsweg
-		trajectory_class::s_br = round(trajectory_class::d_s /trajectory_class::dd_s_max_dec)  * 0.5 * (trajectory_class::d_s);
+		// Schutz gegen Division durch 0 (Parameter dec_max darf 0 sein) - laeuft im Servo-ISR!
+		float dd_s_max_dec_tmp = trajectory_class::dd_s_max_dec;
+		if(dd_s_max_dec_tmp == 0.0f)
+		{
+			dd_s_max_dec_tmp = 1.0e-9f;	// verhindert inf/NaN im Servoloop
+		}
+		trajectory_class::s_br = round(trajectory_class::d_s / dd_s_max_dec_tmp)  * 0.5 * (trajectory_class::d_s);
 
 		// Geschwindigkeitsberechnung
 		if(trajectory_class::s_delta >= 0.0 )						// positive Bewegungsrichtung

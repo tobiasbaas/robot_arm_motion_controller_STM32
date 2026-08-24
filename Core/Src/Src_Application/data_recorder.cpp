@@ -66,7 +66,7 @@ void data_recorder_class::run(void)
 	if(this->rec_on == true)
 	{
 		// Record rate
-		if(this->record_rate_cnt%this->record_rate_max == 0)
+		if((this->record_rate_max > 0) && (this->record_rate_cnt%this->record_rate_max == 0))
 		{
 			this->record_table_1[this->rec_cnt] = *this->rec_table_ptr[0];
 			this->record_table_2[this->rec_cnt] = *this->rec_table_ptr[1];
@@ -357,7 +357,9 @@ Send recorder data as Binary
 bool data_recorder_class::send_data_binary(void)
 {
 	char str[200];
-	float data[4];
+	// static: Buffer darf den Funktionsrahmen ueberleben, da HAL_UART_Transmit_DMA
+	// nicht blockierend arbeitet und nach Rueckkehr weiter auf diesen Speicher zugreift.
+	static float data[4];
 	sprintf(str,"#REC HEADER START: \n* SERVO FREQUENCY: %d \n* RECORD RATE: %d \n* NUMBER Tables: %d \n* TABLE LENGTH: %d", SERVO_FRQ,this->record_rate_max, this->record_tables_max, DR_TABLE_LENGTH );
 	send_string(str,true);
 	send_string(&this->table_name[0][0],true);

@@ -102,13 +102,13 @@ const float PHASEFACTORB[3] ={0.5, 0.8, 1.0}; // default*/
 #define RAD2DEG 180/M_PI	// Radiant to Degree
 #define DEG2RAD M_PI/180	// Degree to Radiant
 
-#define	UINT_32_MAX	2^32
-#define	INT_32_MAX	2^31
-#define	INT_32_MIN	-2^31
+#define	UINT_32_MAX	0x7FFFFFFF
+#define	INT_32_MAX	0x7FFFFFFF
+#define	INT_32_MIN	0x80000000
 
-#define	UINT_16_MAX	2^16
-#define	INT_16_MAX	2^15
-#define	INT_16_MIN	-2^15
+#define	UINT_16_MAX	0xFFFF
+#define	INT_16_MAX	0x7FFF
+#define	INT_16_MIN	0x8000
 
 
 #define Enable_CH1_L6230_Pin 		GPIO_PIN_10

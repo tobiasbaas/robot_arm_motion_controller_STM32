@@ -23,11 +23,11 @@ class PID_class
 		axis_class* 		myAxis;
 		parameter_class* 	myParameter;
 		error_class* 		myError;
-		bool refresh_parameter(void);
 
 	public:
 		PID_class(/* args */);
 		bool setParameter(CMD_STRUCT* cmd);
+		bool refresh_parameter(void);
 		void init(axis_class* Axis_ptr,parameter_class*  myParameter_ptr,error_class* myError_ptr);
 		float PIDrun(float position, float slowed_target);
 		float PIrun(float position, float slowed_target);

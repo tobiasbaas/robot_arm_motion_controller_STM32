@@ -55,8 +55,7 @@ bool parameter_class::getParameter(uint16_t* param_id, PARAM_DEV* module_paramet
 bool parameter_class::setParameter(CMD_STRUCT* cmd, PARAM_DEV* module_parameter)
 {
     bool ret = false;
-
-    //send_string_DMA("SET PARAMEER of PARAMETER UNIT",true);
+    bool found = false;
 
     uint16_t len = module_parameter[0].value.ui16; // table length
 
@@ -64,33 +63,27 @@ bool parameter_class::setParameter(CMD_STRUCT* cmd, PARAM_DEV* module_parameter)
     {
         if(cmd->i_address == module_parameter[i].adress)
         {
+        	found = true;
         	if(module_parameter[i].read_only)
         	{
         		this->myError->add(PARAMETER_MOD, ERR_PAM_READ_ONLY, __FILE__, __LINE__); // Parameter does not exist not Found
-        		ret = true;
         	}
         	else
         	{
-        		ret = parameter_class::convert_value_from_string(&cmd->value,  module_parameter[i].type, &cmd->argument[3][0], module_parameter[i].minimum, module_parameter[i].maximum);
-				//module_parameter[i].numerator 	= cmd->i_numerator;
-				//module_parameter[i].denominator = cmd->i_denominator;
-        		if(ret == true)
-        		{
-        			module_parameter[i].value.ui64 	= cmd->value.ui64;
-        		}
-        		else
-        		{
-        			ret = true;
-        		}
-				i = len; // end for loop
+        		// bei Fehler (z.B. out of range) bleibt ret == false, der Fehler ist bereits in der Error-Liste
+				if(parameter_class::convert_value_from_string(&cmd->value,  module_parameter[i].type, &cmd->argument[3][0], module_parameter[i].minimum, module_parameter[i].maximum))
+				{
+					module_parameter[i].value.ui64 	= cmd->value.ui64;
+					ret = true;
+				}
         	}
+			i = len; // end for loop
         }
     }
 
-    if(ret == false)
+    if(found == false)
     {
         this->myError->add(PARAMETER_MOD, ERR_PAM_NON_EXIST, __FILE__, __LINE__); // Parameter does not exist not Found
-        ret = true;
     }
 
     return ret;
@@ -108,19 +101,19 @@ bool parameter_class::convert_value_from_string(UNION_VALUE* value, PARAM_TYPE t
 			tmp = strtol(str,& p, 10);
 			switch(tmp)
 			{
-				// TODO: check if case 0 really should be true or if the assignement is swaped
 				case 0:
-					value->_bool = true;
+					value->_bool = false;	// 0 = aus
 					break;
 				case 1:
-					value->_bool = false;
+					value->_bool = true;	// 1 = an
 					break;
 				default:
-					 ret = false;
+					 ret = false;			// nur 0 oder 1 erlaubt
 			}
 			break;
 
 		case _UINT64:	// min and max only 32 bit!!!!
+			// HINWEIS: strtol liefert nur 32 Bit (long). Fuer echte 64-Bit-Werte strtoll() verwenden.
 			value->ui64 = strtol(str,& p, 10);
 			if((value->ui64 < min) || (value->ui64 > max))
 			{
@@ -145,6 +138,7 @@ bool parameter_class::convert_value_from_string(UNION_VALUE* value, PARAM_TYPE t
 			break;
 
 		case _INT64:	// min and max only 32 bit!!!!
+			// HINWEIS: strtol liefert nur 32 Bit (long). Fuer echte 64-Bit-Werte strtoll() verwenden.
 			value->i64 = strtol(str,& p, 10);
 			if((value->i64 < min) || (value->i64 > max))
 			{
@@ -186,6 +180,7 @@ bool parameter_class::convert_value_from_string(UNION_VALUE* value, PARAM_TYPE t
 			break;
 
 		case POS_INT:
+			// HINWEIS: strtol liefert nur 32 Bit (long). Fuer echte 64-Bit-Werte strtoll() verwenden.
 			value->i64 = strtol(str,& p, 10);
 			if((value->i64 < min) || (value->i64 > max))
 			{
@@ -194,6 +189,9 @@ bool parameter_class::convert_value_from_string(UNION_VALUE* value, PARAM_TYPE t
 			break;
 
 		case _STRING:
+			// HINWEIS: str8 ist nur 8 Bytes gross! strcpy kann den Puffer ueberlaufen
+			// (Argument darf bis zu 19 Zeichen haben) und benachbarte Struct-Member
+			// (minimum/maximum/description) zerstoeren. Besser strncpy(str8, str, 7) + Terminator.
 			strcpy(value->str8,str);
 			break;
 
@@ -374,6 +372,8 @@ bool parameter_class::print_param_value_raw(PARAM_TYPE type, UNION_VALUE value)
 			break;
 
 		case _UINT64:
+			// HINWEIS: "%u" erwartet 32 Bit; value.ui64 ist 64 Bit -> falsche Ausgabe.
+			// nano.printf unterstuetzt kein %llu -> ggf. als zwei 32-Bit-Haelften ausgeben.
 			sprintf(str,"%u",value.ui64);
 			break;
 
@@ -386,6 +386,7 @@ bool parameter_class::print_param_value_raw(PARAM_TYPE type, UNION_VALUE value)
 			break;
 
 		case _INT64:
+			// HINWEIS: "%ld" erwartet 32 Bit (long); value.i64 ist 64 Bit -> falsche Ausgabe.
 			sprintf(str,"%ld",value.i64);
 			break;
 

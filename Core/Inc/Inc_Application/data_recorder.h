@@ -71,7 +71,7 @@ class data_recorder_class
 		PARAM_DEV module_parameter[MAX_NUM_PARAMETER_DR] =
 		{
 			{0x01, _UINT16, 	MAX_NUM_PARAMETER_DR,MAX_NUM_PARAMETER_DR, MAX_NUM_PARAMETER_DR, true, "Number of Parameters in Data Recorder Module"}, // every Module needs this parameter with number of
-			{0x10, _UINT16, 	10, 						0, 5000,							false, "Record Rate"},
+			{0x10, _UINT16, 	10, 						1, 5000,							false, "Record Rate"},
 			{0x11, _UINT16, 	1, 						0, 2,							false, "Data Recorder Trigger Type"},				// 0 = OFF, 1 = MOV
 			{0x12, _UINT16, 	4, 						0, 0,							false, "Number of Tables (1 to 4)"},
 			{0x21, _UINT16, 	1, 						0, MAX_NUM_DR_TRACES_TO_CHOOSE,	false, "Table 1 ID"},		// [4]

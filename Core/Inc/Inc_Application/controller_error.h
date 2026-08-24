@@ -76,6 +76,7 @@ typedef enum
 	ERR_PAM_LOCKED_MO_ON 	= 11,
 	ERR_MOD_NO_PAM	 		= 12,
 	ERR_MOD_NO_HLP			= 13,
+	ERR_NO_CMD_END			= 14,
 	ERR_PAM_LOCKED_AXS_ON 	= 100,
 	ERR_AXS_DISABLED 		= 101,
 	ERR_PAM_LOCKED_SVO_ON 	= 200,
@@ -90,35 +91,38 @@ typedef enum
 
 class error_class
 {
+
     private:
-		#define MAX_NUM_ERRORS 25
+
+		#define MAX_NUM_ERRORS 26
 		const ERRORS my_sys_error_list[MAX_NUM_ERRORS] =
 		{
-				{ERR_SERVO_LOAD_2_HIGH	, "Warning, Servo-Load over 70%"}, 		// WARNING 	-> negative error number
+				{ERR_SERVO_LOAD_2_HIGH	, "Warning, Servo-Load over 70%"}, 			// WARNING 	-> negative error number
 				{ERR_NO_ERROR			, "No Error"},								// ERROR 	-> positive error number and zero
 				{ERR_UNKNOWN_DEV_CLASS	, "Unknown DEVICE CLASS"},
 				{ERR_UNKNOWN_CMD		, "Unknown Command"},
-				{ERR_CMD_LIST_ERROR	, "Internal Command List Error"},
+				{ERR_CMD_LIST_ERROR		, "Internal Command List Error"},
 				{ERR_MOD_NAME_UNKNOWN	, "Module Name Unknown"},
 				{ERR_PAM_NON_EXIST		, "Parameter does Not Exist"},
-				{ERR_UNKNOWN_MOD_ID	, "Unknown Module Identifier"},
+				{ERR_UNKNOWN_MOD_ID		, "Unknown Module Identifier"},
 				{ERR_UNKNOWN_INSTANCE	, "Unknown Instance"},
-				{ERR_UNKNOWN_PAM_ID	, "Unknown Parameter ID"},
+				{ERR_UNKNOWN_PAM_ID		, "Unknown Parameter ID"},
 				{ERR_UNKNOWN_PAM_TYPE	, "Unknown Parameter Type"},
-				{ERR_PAM_VALUE_INVALID, "Parameter Value not Valid"},
+				{ERR_PAM_VALUE_INVALID	, "Parameter Value not Valid"},
 				{ERR_PAM_LOCKED_MO_ON	, "Parameter update not allowed, motion in progress"},
-				{ERR_MOD_NO_PAM		, "Module has No Parameter"},
-				{ERR_MOD_NO_HLP		, "Module Has No Help Entries"},
-				{ERR_PAM_LOCKED_AXS_ON, "Module Parameter Locked - Axis Enabled"},		// from 100 Axis Parameter Errors
+				{ERR_MOD_NO_PAM			, "Module has No Parameter"},
+				{ERR_MOD_NO_HLP			, "Module Has No Help Entries"},
+				{ERR_NO_CMD_END			, "No Semicolon at CMD End"},
+				{ERR_PAM_LOCKED_AXS_ON	, "Module Parameter Locked - Axis Enabled"},		// from 100 Axis Parameter Errors
 				{ERR_AXS_DISABLED		, "Axis Disabled"},
-				{ERR_PAM_LOCKED_SVO_ON, "Module Parameter Locked - Servo Running"},		// from 200 Servo Control Errors
+				{ERR_PAM_LOCKED_SVO_ON	, "Module Parameter Locked - Servo Running"},		// from 200 Servo Control Errors
 				{ERR_SVO_OFF			, "Servo OFF"},
-				{ERR_SVO_ON			, "Servo ON"},
-				{ERR_PAM_READ_ONLY	, "Parameter is Read Only"},
+				{ERR_SVO_ON				, "Servo ON"},
+				{ERR_PAM_READ_ONLY		, "Parameter is Read Only"},
 				{ERR_PAM_OUT_OF_RANGE	, "Parameter Out of Range"},
-				{ERR_VALUE_ERR		, "Invalid Value Format"},
-				{ERR_VARIABLE_STR_CONV, "Variable to String Convertion faild"	},
-				{ERR_UNKNOWN_ERROR	, "Unknown Error"}
+				{ERR_VALUE_ERR			, "Invalid Value Format"},
+				{ERR_VARIABLE_STR_CONV	, "Variable to String Convertion faild"	},
+				{ERR_UNKNOWN_ERROR		, "Unknown Error"}
 		};
 
         uint8_t cnt;
@@ -164,6 +168,13 @@ class error_class
         STATUS_WORD  status;
         char last_cmd[CMD_STR_LENGTH]= {0};
         char* last_cmd_ptr;
+
+		#define MAX_NUM_PARAMETER_AXIS 1
+        // parameter TYPES: _UINT64, _UINT32, _UINT16, _INT64, _INT32, _INT16, _FLOAT, _DOUBLE, _STRING, _BOOL, _INIT
+        PARAM_DEV module_parameter[MAX_NUM_PARAMETER_AXIS] =
+        {
+            {0x01, _UINT16, 	MAX_NUM_PARAMETER_AXIS, 0, 0, true, "Number of Axis Module Parameters"}, // every Module needs this parameter with number of
+        };
 };
 
 #endif
