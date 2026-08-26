@@ -25,6 +25,20 @@ bool ComInt_class::interpreter(char *str)
 
     if(ret == true)
     {
+    	// ACK: Befehl erfolgreich geparst
+    	// Only show module and instance if a module was actually specified in the command,
+    	// otherwise just show the command code (e.g. IDN, HLP, ERR don't have a module)
+    	char ack[60];
+    	if(this->myCmd.dv_module != NON_MOD)
+    	{
+    		sprintf(ack, ">ACK: %s %s_%d", this->myCmd.cmd_str, this->myCmd.module_str, this->myCmd.i_instance);
+    	}
+    	else
+    	{
+    		sprintf(ack, ">ACK: %s", this->myCmd.cmd_str);
+    	}
+    	send_string(ack, true);
+
     	ret = false;	// reset to detect unknown CMD
     	for(int n=0; n<MAX_NUM_COMANDS; n++)
 		{
@@ -38,8 +52,18 @@ bool ComInt_class::interpreter(char *str)
 		// Error Command not found
 		if(ret == false)
 		{
+			char nack[60];
+			sprintf(nack, ">?UNKNOWN CMD: %s", this->myCmd.cmd_str);
+			send_string(nack, true);
 			ComInt_class::myError->add(COMMAND_MOD, ERR_UNKNOWN_CMD, __FILE__, __LINE__); // Unknown CMD
 		}
+    }
+    else
+    {
+    	// Parse Error
+    	char nack[60];
+    	sprintf(nack, ">?PARSE ERROR: %s", this->myCmd.cmd_str);
+    	send_string(nack, true);
     }
     return ret; 
 }
@@ -136,6 +160,7 @@ bool ComInt_class::seperate_cmd(char *str)
 
     this->myCmd.dv_module = NON_MOD;	// no module
     this->myCmd.i_instance = 100; 		// no instance
+    this->myCmd.module_str[0] = 0;		// clear module string to avoid stale values from previous commands
     // prepare for Parameter (not used in all CMDs, but always prepared)
     this->myCmd.i_address = 0;       // Address number
     this->myCmd.i_numerator = 0;
@@ -254,6 +279,7 @@ void ComInt_class::cpy_CMD_arguments_4_parameters(void)
 	}
 	if ( * p != 0 ) { // Address conversion failed
 		ComInt_class::myError->add(COMMAND_MOD, ERR_UNKNOWN_MOD_ID, __FILE__, __LINE__); // 	{8, "Unknown Parameter ID"},
+		send_string("#ERROR: Invalid parameter address", true);
 	}
 
 	//	= (int64_t)atoi(&this->myCmd.argument[3][0]); 	// second argument in Parameter commands is value
@@ -329,6 +355,7 @@ bool ComInt_class::set_eeprom_parameter(void)
     {
 		case NON_MOD:
 			ComInt_class::myError->add(COMMAND_MOD, ERR_MOD_NO_PAM, __FILE__, __LINE__); // Module has No Parameter
+			send_string("#ERROR: No module specified", true);
 			break;
 
         case SYSTEM_MOD:
@@ -361,18 +388,22 @@ bool ComInt_class::set_eeprom_parameter(void)
 
         case ERROR_MOD:
         	ComInt_class::myError->add(COMMAND_MOD, ERR_MOD_NO_PAM, __FILE__, __LINE__); // Module has No Parameter
+        	send_string("#ERROR: Module has no parameters", true);
         	break;
 
         case PARAMETER_MOD:
         	ComInt_class::myError->add(COMMAND_MOD, ERR_MOD_NO_PAM, __FILE__, __LINE__); // Module has No Parameter
+        	send_string("#ERROR: Module has no parameters", true);
             break;
 
         case COMMAND_MOD:
         	ComInt_class::myError->add(COMMAND_MOD, ERR_MOD_NO_PAM, __FILE__, __LINE__); // Module has No Parameter
+        	send_string("#ERROR: Module has no parameters", true);
             break;
 
         default:
             ComInt_class::myError->add(COMMAND_MOD, ERR_UNKNOWN_MOD_ID, __FILE__, __LINE__); // Unknown Module Identifier
+            send_string("#ERROR: Unknown module", true);
             ret = false;
     }
     return ret;
@@ -396,6 +427,7 @@ bool ComInt_class::get_eeprom_parameter(void)
     {
 		case NON_MOD:
 			ComInt_class::myError->add(COMMAND_MOD, ERR_MOD_NO_PAM, __FILE__, __LINE__); // Module has No Parameter
+			send_string("#ERROR: No module specified", true);
 			break;
 
         case SYSTEM_MOD:
@@ -435,18 +467,22 @@ bool ComInt_class::get_eeprom_parameter(void)
 
         case PARAMETER_MOD:
         	ComInt_class::myError->add(COMMAND_MOD, ERR_MOD_NO_PAM, __FILE__, __LINE__); // Module has No Parameter
+        	send_string("#ERROR: Module has no parameters", true);
             break;
 
         case COMMAND_MOD:
         	ComInt_class::myError->add(COMMAND_MOD, ERR_MOD_NO_PAM, __FILE__, __LINE__); // Module has No Parameter
+        	send_string("#ERROR: Module has no parameters", true);
             break;
 
         case ERROR_MOD:
         	ComInt_class::myError->add(COMMAND_MOD, ERR_MOD_NO_PAM, __FILE__, __LINE__); // Module has No Parameter
+        	send_string("#ERROR: Module has no parameters", true);
         	break;
 
         default:
             ComInt_class::myError->add(COMMAND_MOD, ERR_UNKNOWN_MOD_ID, __FILE__, __LINE__); // Unknown Module Identifier
+            send_string("#ERROR: Unknown module", true);
             ret = false;
     }
     return ret;
@@ -468,6 +504,7 @@ bool ComInt_class::set_parameter(void)
     {
 		case NON_MOD:
 			ComInt_class::myError->add(COMMAND_MOD, ERR_MOD_NO_PAM, __FILE__, __LINE__); // Module has No Parameter
+			send_string("#ERROR: No module specified", true);
 			break;
         case SYSTEM_MOD:
         	ret = this->mySystem->setParameter(&this->myCmd);
@@ -493,15 +530,19 @@ bool ComInt_class::set_parameter(void)
         case PARAMETER_MOD:
         	//ret = this->myParameter->setParameter(&this->myCmd,this->myParameter->module_parameter);
         	ComInt_class::myError->add(COMMAND_MOD, ERR_MOD_NO_PAM, __FILE__, __LINE__); // Module has No Parameter
+        	send_string("#ERROR: Module has no settable parameters", true);
             break;
         case COMMAND_MOD:
         	ComInt_class::myError->add(COMMAND_MOD, ERR_MOD_NO_PAM, __FILE__, __LINE__); // Module has No Parameter
+        	send_string("#ERROR: Module has no settable parameters", true);
             break;
         case ERROR_MOD:
         	ComInt_class::myError->add(COMMAND_MOD, ERR_MOD_NO_PAM, __FILE__, __LINE__); // Module has No Parameter
-			break;
+        	send_string("#ERROR: Module has no settable parameters", true);
+        	break;
         default:
             ComInt_class::myError->add(COMMAND_MOD, ERR_UNKNOWN_MOD_ID, __FILE__, __LINE__); // Unknown Module Identifier
+            send_string("#ERROR: Unknown module", true);
             ret = false;
     }
 
@@ -576,6 +617,7 @@ bool ComInt_class::get_parameter_hlp(void)
 
         default:
             ComInt_class::myError->add(COMMAND_MOD, ERR_UNKNOWN_MOD_ID, __FILE__, __LINE__); // Unknown Module Identifier
+            send_string("#ERROR: Unknown module", true);
             ret = false;
     }
     if(param_ptr != NULL)
@@ -639,11 +681,13 @@ bool ComInt_class::get_parameter(void)
         	break;
         default:
             ComInt_class::myError->add(COMMAND_MOD, ERR_UNKNOWN_MOD_ID, __FILE__, __LINE__); // Unknown Module Identifier
+            send_string("#ERROR: Unknown module", true);
             ret = false;
     }
     if(no_param == true)
     {
     	ComInt_class::myError->add(COMMAND_MOD, ERR_MOD_NO_PAM, __FILE__, __LINE__); // no Parameter in Module
+    	send_string("#ERROR: Module has no parameters", true);
     }
     else
     {
@@ -677,26 +721,32 @@ bool ComInt_class::help(void)
 
         case AXIS_MOD:
         	ComInt_class::myError->add(COMMAND_MOD, ERR_MOD_NO_HLP, __FILE__, __LINE__); // Module has no help entries
+        	send_string("#ERROR: No help for this module", true);
             break;
 
         case MOTION_PID_MOD:
         	ComInt_class::myError->add(COMMAND_MOD, ERR_MOD_NO_HLP, __FILE__, __LINE__); // Module has no help entries
+        	send_string("#ERROR: No help for this module", true);
             break;
 
         case C_PID_MOD:
         	ComInt_class::myError->add(COMMAND_MOD, ERR_MOD_NO_HLP, __FILE__, __LINE__); // Module has no help entries
+        	send_string("#ERROR: No help for this module", true);
             break;
 
         case ENCODER_MOD:
         	ComInt_class::myError->add(COMMAND_MOD, ERR_MOD_NO_HLP, __FILE__, __LINE__); // Module has no help entries
+        	send_string("#ERROR: No help for this module", true);
             break;
 
         case TRAJECTORY_MOD:
         	ComInt_class::myError->add(COMMAND_MOD, ERR_MOD_NO_HLP, __FILE__, __LINE__); // Module has no help entries
+        	send_string("#ERROR: No help for this module", true);
             break;
 
         case PARAMETER_MOD:
         	ComInt_class::myError->add(COMMAND_MOD, ERR_MOD_NO_HLP, __FILE__, __LINE__); // Module has no help entries
+        	send_string("#ERROR: No help for this module", true);
             break;
 
         case COMMAND_MOD:
@@ -709,6 +759,7 @@ bool ComInt_class::help(void)
 
         default:
             this->myError->add(COMMAND_MOD, ERR_UNKNOWN_MOD_ID, __FILE__, __LINE__); // Unknown Module Identifier
+            send_string("#ERROR: Unknown module", true);
             ret = false;
     }
 
@@ -763,7 +814,7 @@ bool ComInt_class::clear_FLASH(void)
 	}
 	else
 	{
-		send_string("#FLASH EASE FAILD",true);
+		send_string("#FLASH EASE FAILED",true);
 	}
 	return true;
 }
@@ -819,6 +870,7 @@ bool ComInt_class::mov(void)
 	float target = strtof(&this->myCmd.argument[2][0], & p);
 	if ( * p != 0 ) { // Address conversion failed
 		ComInt_class::myError->add(COMMAND_MOD, ERR_UNKNOWN_MOD_ID, __FILE__, __LINE__); // 	{8, "Unknown Parameter ID"
+		send_string("#ERROR: Invalid target position", true);
 		ret = false;
 	}
 	else
@@ -842,6 +894,7 @@ bool ComInt_class::mvr(void)
 	float target = strtof(&this->myCmd.argument[2][0], & p);
 	if ( * p != 0 ) { // Address conversion failed
 		ComInt_class::myError->add(COMMAND_MOD, ERR_UNKNOWN_MOD_ID, __FILE__, __LINE__); // 	{8, "Unknown Parameter ID"
+		send_string("#ERROR: Invalid relative target", true);
 		ret = false;
 	}
 	else
@@ -867,6 +920,7 @@ bool ComInt_class::qPOS(void)
 	if(this->myCmd.i_instance == 100) // instance missing
 	{
 		ComInt_class::myError->add(COMMAND_MOD, ERR_UNKNOWN_INSTANCE, __FILE__, __LINE__); // 	{8, "Module instance"
+		send_string("#ERROR: No axis instance specified", true);
 	}
 	else
 	{
@@ -890,6 +944,7 @@ bool ComInt_class::enable_disable_axis(void)
 	bool cmd = (bool)strtol(&this->myCmd.argument[2][0], & p, 10);
 	if ( * p != 0 ) { // Address conversion failed
 		ComInt_class::myError->add(COMMAND_MOD, ERR_UNKNOWN_MOD_ID, __FILE__, __LINE__); // 	{8, "Unknown Parameter ID"
+		send_string("#ERROR: Invalid argument", true);
 		ret = false;
 	}
 	else
@@ -921,6 +976,7 @@ bool ComInt_class::servo_on_off(void)
 	bool cmd = (bool)strtol(&this->myCmd.argument[2][0], & p, 10);
 	if ( * p != 0 ) { // Address conversion failed
 		ComInt_class::myError->add(COMMAND_MOD, ERR_UNKNOWN_MOD_ID, __FILE__, __LINE__); // 	{8, "Unknown Parameter ID"
+		send_string("#ERROR: Invalid argument", true);
 		ret = false;
 	}
 	else
@@ -940,6 +996,7 @@ COMMAND START RECORDING --> "REC"
 bool ComInt_class::rec(void)
 {
 	this->myDR->trigger_start(DR_TGR_MOV);
+	send_string("#RECORDING TRIGGERED", true);
     return true;
 }
 
@@ -957,6 +1014,7 @@ bool ComInt_class::run_current_loop(void)
 	float current = strtof(&this->myCmd.argument[2][0], & p);
 	if ( * p != 0 ) { // Address conversion failed
 		ComInt_class::myError->add(COMMAND_MOD, ERR_UNKNOWN_MOD_ID, __FILE__, __LINE__); // 	{8, "Unknown Parameter ID"
+		send_string("#ERROR: Invalid current value", true);
 		ret = false;
 	}
 	else
@@ -984,6 +1042,7 @@ bool ComInt_class::find_phase(void)
 	else
 	{
 		ComInt_class::myError->add(COMMAND_MOD, ERR_AXS_DISABLED, __FILE__, __LINE__); // 	AXIS Disabled"
+		send_string("#ERROR: Axis disabled", true);
 	}
     return true;
 }
@@ -1053,6 +1112,7 @@ COMMAND Start Current Loop Test FOC --> "CLT"
 bool ComInt_class::start_current_test(void)
 {
 	//this->myAxis[this->myCmd.i_instance]->myCurrent_Control->start_current_loop_test();
+	send_string("#NOT IMPLEMENTED", true);
     return true;
 }
 
@@ -1065,6 +1125,7 @@ COMMAND Start SVM Test --> "SVT"
 bool ComInt_class::start_svm_test(void)
 {
 	//this->myAxis[this->myCmd.i_instance]->myCurrent_Control->start_svm_test();
+	send_string("#NOT IMPLEMENTED", true);
     return true;
 }
 
@@ -1087,7 +1148,7 @@ bool ComInt_class::stop(void)
 			this->myAxis[i]->disable();
 		}
 	}
-
+	send_string("#STOPPED", true);
     return true;
 }
 
@@ -1114,4 +1175,3 @@ bool ComInt_class::read_record_table_binary(void)
 	this->myDR->send_data_binary();
     return true;
 }
-

@@ -317,7 +317,7 @@ void SystemClock_Config(void)
   * @param  htim TIM handle
   * @retval None
   */
-__weak void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
+void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 {
   /* Prevent unused argument(s) compilation warning */
 
