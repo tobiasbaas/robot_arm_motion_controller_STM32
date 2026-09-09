@@ -33,6 +33,9 @@
 #include "fdcan.h"
 #include "tim.h"
 
+#include "typedefs.h"
+#include "OD.h"
+
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -171,8 +174,13 @@ void canopen_task(void *argument)
 	canopenNodeSTM32.CANHandle = &hfdcan1;
 	canopenNodeSTM32.HWInitFunction = MX_FDCAN1_Init;
 	canopenNodeSTM32.timerHandle = &htim17;
-	canopenNodeSTM32.desiredNodeID = 2;
+	canopenNodeSTM32.desiredNodeID = CANOPEN_NODE_ID;
 	canopenNodeSTM32.baudrate = 125;
+	/* RPDO-COB-IDs vor der CANopen-Initialisierung setzen (OD_PERSIST_COMM
+	 * dient als persistentes Objekt-Woerterbuch, wird von CO_PDO_init gelesen).
+	 * Ein Wert mit Bit 31 (0x80000000) markiert einen ungueltigen/unbenutzten PDO. */
+	OD_PERSIST_COMM.x1400_RPDOCommunicationParameter.COB_IDUsedByRPDO = RPDO1_COB_ID;
+	OD_PERSIST_COMM.x1401_RPDOCommunicationParameter.COB_IDUsedByRPDO = RPDO2_COB_ID;
 	canopen_app_init(&canopenNodeSTM32);
 	/* Infinite loop */
 	for(;;)

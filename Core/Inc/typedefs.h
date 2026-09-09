@@ -6,6 +6,12 @@
 
 #include "main.h"
 
+/* AUSWAHL DER PLATINENVARIANTE (CONTROLLER_1 / CONTROLLER_2 / CONTROLLER_3)
+ * Die Variante wird beim Bauen gesetzt, z.B. ueber das CMake-Preset:
+ *   cmake --preset Board2 && cmake --build --preset Board2
+ * HACK: Ist keins der drei Defines gesetzt, faellt die Firmware auf
+ * CONTROLLER_1 (Board 1) zurueck (siehe Treiberblock weiter unten).
+ */
 //#define CONTROLLER_1
 //#define CONTROLLER_2
 //#define CONTROLLER_3
@@ -13,8 +19,8 @@
 //#define SEND_OVER_USB // Information is sent using `send_string_USB`; comment this out to send using `send_string_DMA`
 
 #define VERSION_STR 		"00.00.002"
-#define CONTROLLER_NAME_STR "LIS-MC-U1A2" // Labor Inform. Sys. - Motion Controller - Universal: no1 Axis: 2
-#define CPY_STR 			"HKA Copyright 2025"
+//#define CONTROLLER_NAME_STR "LIS-MC-U1A2" // Labor Inform. Sys. - Motion Controller - Universal: no1 Axis: 2
+#define CPY_STR 			"HKA Copyright 2026"
 
 #define MAX_NUM_AXIS 		2
 #define CMD_STR_LENGTH 		60
@@ -52,36 +58,86 @@
 //#define ADDR_FLASH_PAGE_255   	((uint32_t)0x0807f800) /* Base @ of Page 255, 2 Kbytes */
 
 
-// Driver 1A
-#define AXA_MOTORSTEP_COUNT	200
-#define AXA_MAX_V			4.0
-const float PHASEFACTORA[3] ={0.2, 1.0, 1.5}; // M1
+/*****************************************************
+* TREIBERBLOCK PRO PLATINENVARIANTE
+* erklaert in der Kommentarzeile oben (CONTROLLER_1/2/3).
+* Sichere Auswahl: BOARDS, deren Kennwerte in den
+* Originalvarianten per Kommentar umgeschaltet wurden.
+*******************************************************/
+#if !defined(CONTROLLER_1) && !defined(CONTROLLER_2) && !defined(CONTROLLER_3)
+	#define CONTROLLER_1 // Fallback: Board 1, wenn nichts gesetzt ist
+#endif
 
-// Driver 1B
-#define AXB_MOTORSTEP_COUNT	200
-#define AXB_MAX_V			4.0
-const float PHASEFACTORB[3] ={0.8, 1.0, 1.5}; // M2
+#if defined(CONTROLLER_1) // ---------- Board 1 ----------
+	#define CONTROLLER_NAME_STR "LIS-MC-Board1" // Labor Inform. Sys. - Motion Controller
 
-/* choose depending on which motion controller you want to flash
-// Driver 2A
-#define AXA_MOTORSTEP_COUNT	200
-#define AXA_MAX_V			4.0
-const float PHASEFACTORA[3] ={1.0, 1.0, 1.5}; // M3
 
-// Driver 2B
-#define AXB_MOTORSTEP_COUNT	200
-#define AXB_MAX_V			4.0
-const float PHASEFACTORB[3] ={1.0, 1.0, 1.5}; // M4
+	// Driver 1A
+	#define AXA_MOTORSTEP_COUNT	200
+	#define AXA_MAX_V			4.0
 
-// Driver 3A
-#define AXA_MOTORSTEP_COUNT	200
-#define AXA_MAX_V			12.0
-const float PHASEFACTORA[3] ={0.2, 1.0, 1.5}; // M5
+	// Driver 1B
+	#define AXB_MOTORSTEP_COUNT	200
+	#define AXB_MAX_V			4.0
 
-// Driver 3B
-#define AXB_MOTORSTEP_COUNT	200
-#define AXB_MAX_V			4.0
-const float PHASEFACTORB[3] ={0.5, 0.8, 1.0}; // default*/
+#elif defined(CONTROLLER_2) // ---------- Board 2 ----------
+	#define CONTROLLER_NAME_STR "LIS-MC-Board2" // Labor Inform. Sys. - Motion Controller
+
+	// Driver 2A
+	#define AXA_MOTORSTEP_COUNT	200
+	#define AXA_MAX_V			4.0
+
+	// Driver 2B
+	#define AXB_MOTORSTEP_COUNT	200
+	#define AXB_MAX_V			4.0
+
+#elif defined(CONTROLLER_3) // ---------- Board 3 ----------
+	#define CONTROLLER_NAME_STR "LIS-MC-Board3" // Labor Inform. Sys. - Motion Controller
+
+	// Driver 3A
+	#define AXA_MOTORSTEP_COUNT	200
+	#define AXA_MAX_V			12.0
+
+	// Driver 3B
+	#define AXB_MOTORSTEP_COUNT	200
+	#define AXB_MAX_V			4.0
+#endif
+
+/* Die PHASEFACTOR-Arrays pro Platine sind in set_pwm.cpp definiert (dort je
+ * CONTROLLER_1/2/3 gesetzt). Hier nur Deklaration, damit mehrere C-/C++-TUs
+ * keine Mehrfachdefinition (externe Bindung in C) erzeugen. */
+extern const float PHASEFACTORA[3];
+extern const float PHASEFACTORB[3];
+
+/*****************************************************
+* BOARD-KONFIGURATION (CANopen / Software)
+*******************************************************/
+#if defined(CONTROLLER_1) // ---------- Board 1 ----------
+	#define CANOPEN_NODE_ID		2                       // CANopen Node-ID
+	#define JOINT0_SP_SCALE		(5.0/1000000.0)         // Achse 0: setpoint = OD_x6001 * SCALE (Orig: /1e6 * 5.0)
+	#define JOINT1_SP_SCALE		(-5.0/1000000.0)        // Achse 1: setpoint = OD_x6002 * SCALE (Orig: /1e6 * -5.0)
+	#define AXIS1_ENABLED		1                       // 1 = Achse 1 aktiv, 0 = deaktiviert
+	#define RPDO1_COB_ID		0x00000202              // PDO1 COB-ID (Direktzugriff auf joint1/x6001)
+	#define RPDO2_COB_ID		0x00000203              // PDO2 COB-ID (Direktzugriff auf joint2/x6002)
+
+#elif defined(CONTROLLER_2) // ---------- Board 2 ----------
+	#define CANOPEN_NODE_ID		3
+	#define JOINT0_SP_SCALE		(-5.0/1000000.0)        // Achse 0: setpoint = OD_x6001 * SCALE (Orig: /1e6 * -5.0)
+	#define JOINT1_SP_SCALE		(5.0/1000000.0)         // Achse 1: setpoint = OD_x6002 * SCALE (Orig: /1e6 * 5.0)
+	#define AXIS1_ENABLED		1
+	#define RPDO1_COB_ID		0x00000204              // PDO1 COB-ID
+	#define RPDO2_COB_ID		0x00000205              // PDO2 COB-ID
+
+#elif defined(CONTROLLER_3) // ---------- Board 3 ----------
+	#define CANOPEN_NODE_ID		4
+	// Faktor aus der V3-Firmware uebernommen: setpoint = OD_x6001 / 300.0
+	// (Platine 3 liefert den Solldrehwinkel nicht als 1e6-abhaengigen Wert).
+	#define JOINT0_SP_SCALE		(1.0/300.0)             // Achse 0: setpoint = OD_x6001 * SCALE
+	#define JOINT1_SP_SCALE		(-5.0/1000000.0)        // ungenutzt (AXIS1_ENABLED = 0)
+	#define AXIS1_ENABLED		0                       // Platine 3 hat keine 2. Achse
+	#define RPDO1_COB_ID		0x00000206              // PDO1 COB-ID
+	#define RPDO2_COB_ID		0x80000000              // PDO2 ungueltig (Platine 3 hat nur RPDO1)
+#endif
 
 // Definition servo time
 #define	SERVO_FRQ 			10000.0		                // Servo Frequenz

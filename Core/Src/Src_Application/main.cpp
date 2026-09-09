@@ -222,8 +222,10 @@ int main(void)
 
   //send_string("Startup Controller...", true);
 
+   #if AXIS1_ENABLED
    myAxis[1].enabled = true;
    myPID_pos_ptr[1]->servo_on_off(true);
+#endif
 
    myAxis[0].enabled = true;
    myPID_pos_ptr[0]->servo_on_off(true);
@@ -342,15 +344,17 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 			// CANopen Daten
 			if(axis_to_run == 0 && (joint1_old != OD_PERSIST_COMM.x6001_joint1))
 			{
-				myAxis_ptr[axis_to_run]->myTrajectory->setpoint = (OD_PERSIST_COMM.x6001_joint1/1000000.0)*5.0;//*10.0;//*5.0; // M1 Faktor 5.0
+				myAxis_ptr[axis_to_run]->myTrajectory->setpoint = OD_PERSIST_COMM.x6001_joint1 * JOINT0_SP_SCALE; // Skalierung je Platine (typedefs.h)
 				joint1_old = OD_PERSIST_COMM.x6001_joint1;
 			}
 
+#if AXIS1_ENABLED
 			if(axis_to_run == 1 && (joint2_old != OD_PERSIST_COMM.x6002_joint2))
 			{
-				myAxis_ptr[axis_to_run]->myTrajectory->setpoint = (OD_PERSIST_COMM.x6002_joint2/1000000.0)*-5.0;//*10.0;//*5.0; // M1 Faktor 5.0
+				myAxis_ptr[axis_to_run]->myTrajectory->setpoint = OD_PERSIST_COMM.x6002_joint2 * JOINT1_SP_SCALE; // Skalierung je Platine (typedefs.h)
 				joint2_old = OD_PERSIST_COMM.x6002_joint2;
 			}
+#endif
 
 			myAxis_ptr[axis_to_run]->run();
 

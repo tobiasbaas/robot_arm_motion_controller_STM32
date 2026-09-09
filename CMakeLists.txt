@@ -76,7 +76,18 @@ target_include_directories(${CMAKE_PROJECT_NAME} PRIVATE
     ${CMAKE_SOURCE_DIR}/Core/Inc/Inc_Application
 )
 
+# --- Auswahl der Platinenvariante (CONTROLLER_1 / CONTROLLER_2 / CONTROLLER_3) ---
+# BOARD ist eine CMake-Variable (Standard: 1) und bestimmt das Praeprozessor-Define
+# CONTROLLER_<BOARD>. Komfortabel ueber die Presets Board1/Board2/Board3 in
+# CMakePresets.json waehlbar (baut in build/Board<N>).
+set(BOARD 1 CACHE STRING "Platinenvariante: 1, 2 oder 3 (setzt CONTROLLER_<BOARD>)")
+if(NOT BOARD MATCHES "^[123]$")
+    message(FATAL_ERROR "BOARD muss 1, 2 oder 3 sein (ist: '${BOARD}')")
+endif()
+message("Platinenvariante: " ${BOARD} " -> CONTROLLER_" ${BOARD})
+
 target_compile_definitions(${CMAKE_PROJECT_NAME} PRIVATE
+    CONTROLLER_${BOARD}
 )
 
 list(REMOVE_ITEM CMAKE_C_IMPLICIT_LINK_LIBRARIES ob)

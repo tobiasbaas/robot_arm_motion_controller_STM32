@@ -23,6 +23,54 @@
             "cacheVariables": {
                 "CMAKE_BUILD_TYPE": "Release"
             }
+        },
+        {
+            "name": "Board1",
+            "inherits": "default",
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "Debug",
+                "BOARD": "1"
+            }
+        },
+        {
+            "name": "Board2",
+            "inherits": "default",
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "Debug",
+                "BOARD": "2"
+            }
+        },
+        {
+            "name": "Board3",
+            "inherits": "default",
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "Debug",
+                "BOARD": "3"
+            }
+        },
+        {
+            "name": "Board1-Release",
+            "inherits": "default",
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "Release",
+                "BOARD": "1"
+            }
+        },
+        {
+            "name": "Board2-Release",
+            "inherits": "default",
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "Release",
+                "BOARD": "2"
+            }
+        },
+        {
+            "name": "Board3-Release",
+            "inherits": "default",
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "Release",
+                "BOARD": "3"
+            }
         }
     ],
     "buildPresets": [
@@ -33,6 +81,30 @@
         {
             "name": "Release",
             "configurePreset": "Release"
+        },
+        {
+            "name": "Board1",
+            "configurePreset": "Board1"
+        },
+        {
+            "name": "Board2",
+            "configurePreset": "Board2"
+        },
+        {
+            "name": "Board3",
+            "configurePreset": "Board3"
+        },
+        {
+            "name": "Board1-Release",
+            "configurePreset": "Board1-Release"
+        },
+        {
+            "name": "Board2-Release",
+            "configurePreset": "Board2-Release"
+        },
+        {
+            "name": "Board3-Release",
+            "configurePreset": "Board3-Release"
         }
     ]
 }
