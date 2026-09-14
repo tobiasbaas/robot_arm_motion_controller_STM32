@@ -25,8 +25,12 @@ const float PHASEFACTORB[3] ={0.8, 1.0, 1.5}; // M2
 const float PHASEFACTORA[3] ={1.0, 1.0, 1.5}; // M3
 const float PHASEFACTORB[3] ={1.0, 1.0, 1.5}; // M4
 #elif defined(CONTROLLER_3)
-const float PHASEFACTORA[3] ={0.2, 1.0, 1.5}; // M5
-const float PHASEFACTORB[3] ={0.5, 0.8, 1.0}; // default
+	#ifdef TESTMOTOR_23SSM8440
+	const float PHASEFACTORA[3] ={0.2, 1.0, 1.2}; // Testmotor: Accel-Boost reduziert (1,2 -> max 2,9 V / 4,8 A)
+	#else
+	const float PHASEFACTORA[3] ={0.2, 1.0, 1.5}; // Original M5
+	#endif
+	const float PHASEFACTORB[3] ={0.5, 0.8, 1.0}; // default
 #endif
 
 set_pwm_class::set_pwm_class()

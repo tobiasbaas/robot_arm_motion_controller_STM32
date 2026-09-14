@@ -16,7 +16,7 @@
 //#define CONTROLLER_2
 //#define CONTROLLER_3
 
-//#define SEND_OVER_USB // Information is sent using `send_string_USB`; comment this out to send using `send_string_DMA`
+#define SEND_OVER_USB // Information is sent using `send_string_USB`; comment this out to send using `send_string_DMA`
 
 #define VERSION_STR 		"00.00.002"
 //#define CONTROLLER_NAME_STR "LIS-MC-U1A2" // Labor Inform. Sys. - Motion Controller - Universal: no1 Axis: 2
@@ -94,9 +94,18 @@
 #elif defined(CONTROLLER_3) // ---------- Board 3 ----------
 	#define CONTROLLER_NAME_STR "LIS-MC-Board3" // Labor Inform. Sys. - Motion Controller
 
+	// TESTMOTOR 23SSM8440-EC1000 (ACT; 1,8°; 2,4 V; 4,0 A/Phase; 0,6 Ohm; 2,5 mH)
+	// Temporäre Testmotor-Konfiguration. Rueckbau auf Originalmotor M5:
+	// diese eine Zeile auskommentieren:
+	#define TESTMOTOR_23SSM8440
+
 	// Driver 3A
 	#define AXA_MOTORSTEP_COUNT	200
-	#define AXA_MAX_V			12.0
+	#ifdef TESTMOTOR_23SSM8440
+		#define AXA_MAX_V		2.4	// Testmotor: begrenzt Phasenstrom auf ~4 A bei 0,6 Ohm
+	#else
+		#define AXA_MAX_V		12.0	// Original M5
+	#endif
 
 	// Driver 3B
 	#define AXB_MOTORSTEP_COUNT	200
