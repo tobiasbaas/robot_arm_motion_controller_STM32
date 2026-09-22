@@ -177,6 +177,10 @@ bool data_recorder_class::table_ptr_update(uint16_t id,uint8_t trace)
 					this->rec_table_ptr[trace] = &this->myAxis[axis]->myTrajectory->acc;
 					sprintf(&this->table_name[trace][0],"Acceleration - Axis: %d",axis);
 					break;
+		case 8:		// MT6835 Encoder Pos
+					this->rec_table_ptr[trace] = &this->myAxis[axis]->myPos->mt6835_result.angle_rad;
+					sprintf(&this->table_name[trace][0],"MT6835 Enc Pos - Axis: %d",axis);
+					break;
 		// case 8:		// PID out Id
 		// 			this->rec_table_ptr[trace] = &this->myAxis[axis]->myCurrent_Control->PI[FOC_D].pid_y;
 		// 			sprintf(&this->table_name[trace][0],"FOC (d) PI Control Out - Axis: %d",axis);
