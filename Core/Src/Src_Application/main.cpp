@@ -352,13 +352,13 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 				joint1_old = OD_PERSIST_COMM.x6001_joint1;
 			}
 
-#if AXIS1_ENABLED
+      #if AXIS1_ENABLED
 			if(axis_to_run == 1 && (joint2_old != OD_PERSIST_COMM.x6002_joint2))
 			{
 				myAxis_ptr[axis_to_run]->myTrajectory->setpoint = OD_PERSIST_COMM.x6002_joint2 * JOINT1_SP_SCALE; // Skalierung je Platine (typedefs.h)
 				joint2_old = OD_PERSIST_COMM.x6002_joint2;
 			}
-#endif
+      #endif
 
 			myAxis_ptr[axis_to_run]->run();
 
@@ -378,10 +378,6 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
     
     myAxis_ptr[axis_to_run]->myPos->mt6835_start_read(); // Initiates the request for the next encoder value via SPI and DMA
 	}
-
-  /* NOTE : This function should not be modified, when the callback is needed,
-            the HAL_TIM_PeriodElapsedCallback could be implemented in the user file
-   */
 }
 
 void HAL_SPI_TxRxCpltCallback(SPI_HandleTypeDef *hspi)

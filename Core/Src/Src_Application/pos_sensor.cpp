@@ -125,9 +125,18 @@ bool pos_sensor_class::get_position_SPI()
 {
 	// Check CRC
 	// Check Status
+	if(!this->data_ready)
+	{
+		return false; // noch kein SPI-Transfer abgeschlossen -> kein valider Wert im Buffer
+	}
 
 	this->mt6835_result = mt6835_get_last_result();
-	//this->position = mt6835_result.angle_raw; //TODO
+
+	/*this->position = mt6835_result.angle_rad; //TODO
+	this->velocity = (this->position - this->position_1) * SERVO_FRQ;
+	this->velocity_filtered_1 = this->velocity_filtered;
+	this->velocity_filtered = 0.98 *this->velocity_filtered_1 + 0.02 * this->velocity;
+	this->position_1 = this->position;*/
 
 	return true;
 }
@@ -177,19 +186,37 @@ uint32_t pos_sensor_class::mt6835_parse_angle(const uint8_t d[MT6835_FRAME_LEN])
          | ((int32_t)(d[4] >> 3));   // ANGLE[4:0] (STATUS[2:0] in Bit2..0)
 }
 
+void pos_sensor_class::mt6835_update_unwrapped_position(uint32_t raw_ticks)
+{
+    if (this->mt6835_first_sample) {
+        // erster Aufruf: nur Startwert setzen, kein Delta berechenbar
+        this->mt6835_last_raw_ticks = raw_ticks;
+        this->mt6835_position_ticks = (int64_t)raw_ticks;
+        this->mt6835_first_sample   = false;
+        return;
+    }
+
+    // kürzeste Distanz zum letzten Sample ermitteln (signed, mit 21-Bit-Wrap)
+    int32_t delta = (int32_t)((raw_ticks - this->mt6835_last_raw_ticks) & ((1UL << 21) - 1u));
+    if (delta >= (1L << 20)) {
+        delta -= (1L << 21);   // in [-2^20, 2^20) zwingen -> kürzester Weg, auch über den Wrap hinweg
+    }
+
+    this->mt6835_position_ticks += delta;   // akkumuliert über beliebig viele Umdrehungen, beide Richtungen
+    this->mt6835_last_raw_ticks  = raw_ticks;
+}
+
 mt6835_result_t pos_sensor_class::mt6835_get_last_result(void)
 {
-	// TODO: Call by reference??? 
-
     mt6835_result_t r;
     const uint8_t *d = rx_buf[this->ready_idx];
 
-    // Roher, unverschobener Winkelwert direkt vom Chip (0..2^21-1)
-    uint32_t angle_raw = (uint32_t)this->mt6835_parse_angle(d);
+    uint32_t angle_raw_abs = this->mt6835_parse_angle(d);
+    this->mt6835_update_unwrapped_position(angle_raw_abs);
 
-    r.angle_raw = angle_raw;
-    r.angle_deg = (float)angle_raw * 360.0f / (float)(1UL << 21);
-    r.angle_rad = (float)angle_raw * M_2PI / (float)(1UL << 21);
+    r.angle_raw = (int32_t)this->mt6835_position_ticks;   // int32_t statt uint32_t im struct!
+    r.angle_deg = (float)this->mt6835_position_ticks * 360.0f / (float)(1UL << 21);
+    r.angle_rad = (float)this->mt6835_position_ticks * M_2PI  / (float)(1UL << 21);
     r.status    = d[4] & 0x07u;
     r.crc       = d[5];
 

@@ -32,7 +32,7 @@ class error_class;
 #define MT6835_FRAME_LEN       6u
 
 typedef struct {
-    uint32_t   angle_raw;   // 21-Bit Rohwert, verschoben um den Startwert (genullt, kann negativ werden)
+    int32_t   angle_raw;   // 21-Bit Rohwert, verschoben um den Startwert (genullt, kann negativ werden)
     float     angle_deg;   // umgerechnet auf 0..360 Grad
 	float 	  angle_rad;	  // umgerechnet auf 0..2Pi 		
     uint8_t   status;      // STATUS[2:0]: Bit0=Overspeed, Bit1=Weak Field, Bit2=Undervoltage 
@@ -65,6 +65,7 @@ class pos_sensor_class
 		void mt6835_init(void);
 		void mt6835_spi_txrx_cplt_callback(SPI_HandleTypeDef *hspi);
 		void mt6835_start_read(void);
+		void mt6835_update_unwrapped_position(uint32_t raw_ticks);
 		mt6835_result_t mt6835_get_last_result(void);
 
 		//bool get_value_SinCos(void);
@@ -110,6 +111,10 @@ class pos_sensor_class
 		GPIO_TypeDef*		mt6835_cs_port;
 		uint16_t			mt6835_cs_pin;
 
+
+		uint32_t mt6835_last_raw_ticks = 0;
+		int64_t  mt6835_position_ticks = 0;   // kontinuierlich, mehrere Umdrehungen möglich
+		bool     mt6835_first_sample   = true;
 		mt6835_result_t mt6835_result;	
 };
 
