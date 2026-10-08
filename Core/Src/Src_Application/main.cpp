@@ -73,8 +73,8 @@ uint64_t servo_cnt = 0;
 int32_t joint1_old = 0;
 int32_t joint2_old = 0;
 
-
-volatile float convVal1 = 0;
+// TODO conVal needed??? -> delete??
+volatile float convVal1 = 0; 
 volatile float convVal2 = 0;
 volatile float convVal3 = 0;
 
@@ -85,6 +85,17 @@ PID_class*              myPID_pos_ptr[MAX_NUM_AXIS];
 current_control_class*  myCurrent_Control[MAX_NUM_AXIS];
 set_pwm_class*          myPWM_ptr[MAX_NUM_AXIS];
 
+// nur für Debug -> entfernen
+struct adc_diag_t {
+    bool     trgo2_ok;      // TRGO2 = OC5REF
+    uint32_t ccr5;          // erwartet: dein eingetragener Wert (z. B. 8500)
+    bool     armed;         // ADC wartet auf Trigger
+    bool     jeos_seen;     // ADC hat nach dem Löschen wieder eine Sequenz beendet
+    uint16_t jdr_a[4];      // Ergebnis zu Zeitpunkt 1
+    uint16_t jdr_b[4];      // Ergebnis zu Zeitpunkt 2
+    bool     jdr_changed;   // mindestens ein Wert hat sich geändert
+} adc_diag;
+
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -92,6 +103,7 @@ void SystemClock_Config(void);
 void MX_FREERTOS_Init(void);
 /* USER CODE BEGIN PFP */
 void send_string(const char* str, bool new_line);
+void adc_selftest();
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
@@ -101,10 +113,8 @@ axis_class 				myAxis[MAX_NUM_AXIS];
 set_pwm_class			myPWM[MAX_NUM_AXIS];
 
 error_class 			myError;
-
 parameter_class 	myParameter;
-
-system_class 		mySystem(&myParameter);
+system_class 		  mySystem(&myParameter);
 
 ComInt_class 			com_inter(&myError);
 
@@ -115,7 +125,7 @@ PID_class				      pid_pos[MAX_NUM_AXIS];
 current_control_class current_control[MAX_NUM_AXIS];
 
 // Data recorder
-data_recorder_class 		myDR(&myParameter,&myError);
+data_recorder_class 		myDR(&myParameter, &myError);
 
 /* USER CODE END 0 */
 
@@ -181,19 +191,18 @@ int main(void)
   /* USER CODE BEGIN 2 */
 
   #ifndef SEND_OVER_USB
-    HAL_StatusTypeDef uart_status;
-    uart_status = HAL_UART_Receive_DMA(&hlpuart1, rx_buff, 1);
+    HAL_UART_Receive_DMA(&hlpuart1, rx_buff, 1); // Start DMA receive
   #endif
 
-	myParameter.myError = &myError;
 
-	myDR_ptr = &myDR;	// pointer only for debug reason
+	myParameter.init_param(&myError);
 
+	myDR_ptr = &myDR;	// TODO -> delete?
 
+  // Init commando interpreter
 	com_inter.myDR = &myDR;
 	com_inter.myParameter	= &myParameter;
   com_inter.mySystem = &mySystem;
-
 
    // Initialization of axis modules
    for(uint8_t i=0;i<MAX_NUM_AXIS;i++)
@@ -201,37 +210,51 @@ int main(void)
  	  pid_pos[i].init(&myAxis[i],&myParameter,&myError);
  	  trajectory[i].init(&myAxis[i],&myParameter,&myError);
  	  pos_sensor[i].init(&myAxis[i],&myParameter,&myError);
- 	  current_control[i].init(&myAxis[i],&myParameter,&myError, &myPWM[i],&trajectory[i]);
+ 	  //current_control[i].init(&myAxis[i],&myParameter,&myError, &myPWM[i],&trajectory[i]);
  	  // pointer to classes belonging to an Axis:
  	  myAxis[i].init(i,&myError,&trajectory[i],&pos_sensor[i],&pid_pos[i],&current_control[i],&myDR,&myParameter);
 
- 	  current_control[i].init(&myAxis[i],&myParameter,&myError, &myPWM[i], &trajectory[i]); // second init with konown axes
+    // Re-initialize current control with the known Axis
+    current_control[i].init(
+        &myAxis[i],
+        &myParameter,
+        &myError,
+        &myPWM[i],
+        &trajectory[i]
+    );
+
+    myAxis_ptr[i] 			= &myAxis[i];
+    com_inter.myAxis[i] = myAxis_ptr[i];
+    myDR.myAxis[i] 			= myAxis_ptr[i];
+
+    myPID_pos_ptr[i]     = &pid_pos[i];
+    myCurrent_Control[i] = &current_control[i];
+  }
+
+  mySystem.init();
+  myDR.init();
 
 
- 	  myAxis_ptr[i] 			= &myAxis[i];
- 	  com_inter.myAxis[i] = myAxis_ptr[i];
- 	  myDR.myAxis[i] 			= myAxis_ptr[i];
-
- 	  myPID_pos_ptr[i]     = &pid_pos[i];
- 	  myCurrent_Control[i] = &current_control[i];
-   }
-
-
-   mySystem.init();
-   myDR.init();
-
-  //send_string("Startup Controller...", true);
+  // enable Axis 
+  myAxis[0].enabled = true;
+  myPID_pos_ptr[0]->servo_on_off(true);
 
    #if AXIS1_ENABLED
    myAxis[1].enabled = true;
    myPID_pos_ptr[1]->servo_on_off(true);
 #endif
 
-   myAxis[0].enabled = true;
-   myPID_pos_ptr[0]->servo_on_off(true);
+  // Start ADC
+  HAL_ADCEx_Calibration_Start(&hadc1, ADC_SINGLE_ENDED);
+  HAL_ADCEx_InjectedStart(&hadc1);
 
-   HAL_TIM_Base_Start_IT(&htim3);
+  // TODO Offset ermitteln; 2. ADC
 
+  // ADC Test -> nur für Debug
+  HAL_Delay(10);                           // PWM läuft ein paar Perioden
+  adc_selftest(); 
+
+  HAL_TIM_Base_Start_IT(&htim3); // Start Servo-Loop
 
   /* USER CODE END 2 */
 
@@ -250,12 +273,7 @@ int main(void)
   /* USER CODE BEGIN WHILE */
 
   while(1){
-
-	  if(new_cmd == 1)
-		// run data recorder if pointer is valid
-		if (myDR_ptr) {
-			myDR_ptr->run();
-		}
+    
 	}
 
   /* NOTE : This function should not be modified, when the callback is needed,
@@ -321,30 +339,36 @@ void SystemClock_Config(void)
   */
 void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 {
-  /* Prevent unused argument(s) compilation warning */
-
-	if (htim->Instance == TIM7) {
-			HAL_IncTick();
-		}
+  // TODO needed???
+	if (htim->Instance == TIM7) 
+  {
+	  HAL_IncTick();
+	}
 
 	// Handle CANOpen app interrupts
-	if (htim == canopenNodeSTM32->timerHandle) {
+	if (htim == canopenNodeSTM32->timerHandle) 
+  {
 		canopen_app_interrupt();
 	}
 
-	if (htim->Instance == TIM3) {
-		// counter (Servo Loop)
-		servo_cnt++;
+  
+  //--------------------------------------------------------------
+  //                    Servo-Loop
+  //--------------------------------------------------------------
+	if (htim->Instance == TIM3) 
+  {
+    //myAxis_ptr[axis_to_run]->myPos->mt6835_start_read(); // Initiates the request for the next encoder value via SPI and DMA
 
-		// jump between axes
-		axis_to_run = (axis_to_run + 1) % MAX_NUM_AXIS;
+		servo_cnt++;  // counter (Servo Loop)
+		axis_to_run = (axis_to_run + 1) % MAX_NUM_AXIS; // jump between axes
 
 		// run axis if pointer is valid
-		if (axis_to_run < MAX_NUM_AXIS && myAxis_ptr[axis_to_run]) {
+		if (axis_to_run < MAX_NUM_AXIS && myAxis_ptr[axis_to_run]) 
+    {
 			// CANopen Daten
 			if(axis_to_run == 0 && (joint1_old != OD_PERSIST_COMM.x6001_joint1))
 			{
-				myAxis_ptr[axis_to_run]->myTrajectory->setpoint = OD_PERSIST_COMM.x6001_joint1 * JOINT0_SP_SCALE; // Skalierung je Platine (typedefs.h)
+				myAxis_ptr[axis_to_run]->myTrajectory->setpoint = OD_PERSIST_COMM.x6001_joint1 * JOINT0_SP_SCALE; // Skalierung je Board (typedefs.h)
 				joint1_old = OD_PERSIST_COMM.x6001_joint1;
 			}
 
@@ -360,9 +384,9 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 
 			// calculate servoload if TIM4 is initialized and constant is valid
 			#ifdef TIMER_COUTER_MAX
-			if (TIMER_COUTER_MAX > 0) {
-				myAxis_ptr[axis_to_run]->servoload = (TIM4->CNT * 100) / TIMER_COUTER_MAX;
-			}
+        if (TIMER_COUTER_MAX > 0) {
+          myAxis_ptr[axis_to_run]->servoload = (TIM4->CNT * 100) / TIMER_COUTER_MAX;
+        }
 			#endif
 		}
 
@@ -375,6 +399,27 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
   /* NOTE : This function should not be modified, when the callback is needed,
             the HAL_TIM_PeriodElapsedCallback could be implemented in the user file
    */
+}
+
+// nur für Debug -> entfernen
+void adc_selftest()
+{
+    adc_diag.trgo2_ok = (htim1.Instance->CR2 & TIM_CR2_MMS2) == TIM_TRGO2_OC5REF;
+    adc_diag.ccr5     = __HAL_TIM_GET_COMPARE(&htim1, TIM_CHANNEL_5);
+    adc_diag.armed    = (hadc1.Instance->CR & ADC_CR_JADSTART) != 0;
+
+    for (int i = 0; i < 4; i++)
+        adc_diag.jdr_a[i] = HAL_ADCEx_InjectedGetValue(&hadc1, ADC_INJECTED_RANK_1 + i);
+
+    __HAL_ADC_CLEAR_FLAG(&hadc1, ADC_FLAG_JEOS);
+    HAL_Delay(2);                                    // ≈ 10 PWM-Perioden bei 5 kHz
+    adc_diag.jeos_seen = __HAL_ADC_GET_FLAG(&hadc1, ADC_FLAG_JEOS);
+
+    adc_diag.jdr_changed = false;
+    for (int i = 0; i < 4; i++) {
+        adc_diag.jdr_b[i] = HAL_ADCEx_InjectedGetValue(&hadc1, ADC_INJECTED_RANK_1 + i);
+        if (adc_diag.jdr_b[i] != adc_diag.jdr_a[i]) adc_diag.jdr_changed = true;
+    }
 }
 
 /* USER CODE END 4 */

@@ -7,11 +7,12 @@
 #include "main.h"
 
 /* AUSWAHL DER PLATINENVARIANTE (CONTROLLER_1 / CONTROLLER_2 / CONTROLLER_3)
- * Die Variante wird beim Bauen gesetzt, z.B. ueber das CMake-Preset:
+ * Die Variante wird beim Bauen gesetzt, z.B. über das CMake-Preset:
  *   cmake --preset Board2 && cmake --build --preset Board2
- * HACK: Ist keins der drei Defines gesetzt, faellt die Firmware auf
- * CONTROLLER_1 (Board 1) zurueck (siehe Treiberblock weiter unten).
+ * HACK: Ist keins der drei Defines gesetzt, fällt die Firmware auf
+ * CONTROLLER_1 (Board 1) zurück (siehe Treiberblock weiter unten).
  */
+
 //#define CONTROLLER_1
 //#define CONTROLLER_2
 //#define CONTROLLER_3
@@ -19,7 +20,6 @@
 #define SEND_OVER_USB // Information is sent using `send_string_USB`; comment this out to send using `send_string_DMA`
 
 #define VERSION_STR 		"00.00.002"
-//#define CONTROLLER_NAME_STR "LIS-MC-U1A2" // Labor Inform. Sys. - Motion Controller - Universal: no1 Axis: 2
 #define CPY_STR 			"HKA Copyright 2026"
 
 #define MAX_NUM_AXIS 		2
@@ -70,7 +70,6 @@
 
 #if defined(CONTROLLER_1) // ---------- Board 1 ----------
 	#define CONTROLLER_NAME_STR "LIS-MC-Board1" // Labor Inform. Sys. - Motion Controller
-
 
 	// Driver 1A
 	#define AXA_MOTORSTEP_COUNT	200
@@ -139,8 +138,6 @@ extern const float PHASEFACTORB[3];
 
 #elif defined(CONTROLLER_3) // ---------- Board 3 ----------
 	#define CANOPEN_NODE_ID		4
-	// Faktor aus der V3-Firmware uebernommen: setpoint = OD_x6001 / 300.0
-	// (Platine 3 liefert den Solldrehwinkel nicht als 1e6-abhaengigen Wert).
 	#define JOINT0_SP_SCALE		(1.0/300.0)             // Achse 0: setpoint = OD_x6001 * SCALE
 	#define JOINT1_SP_SCALE		(-5.0/1000000.0)        // ungenutzt (AXIS1_ENABLED = 0)
 	#define AXIS1_ENABLED		0                       // Platine 3 hat keine 2. Achse

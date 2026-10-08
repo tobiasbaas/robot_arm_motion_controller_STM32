@@ -16,6 +16,8 @@
 #ifndef _CURRENT_CONTROL_H
 #define _CURRENT_CONTROL_H
 
+extern ADC_HandleTypeDef hadc1;
+
 typedef struct
 {
 	float	error;
@@ -50,6 +52,9 @@ class current_control_class : public parameter_class
 		void init(axis_class* Axis_ptr, parameter_class* myParameter_ptr, error_class* myError_ptr, set_pwm_class* myPWM_ptr, trajectory_class* trajectory);
 		bool setAngle(float angle);
 		float getPosition(void);
+		void read_adc(void);
+
+		float myRawADC[4];	// float only for testreasons to be able to use the data recorder
 };
 
 #endif

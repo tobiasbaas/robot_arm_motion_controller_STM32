@@ -9,6 +9,7 @@
 *****************************************************************************/
 
 #include "current_control.h"
+#include "axis.h"
 #include "typedefs.h"
 #include <math.h>
 
@@ -26,6 +27,11 @@ void current_control_class::init(axis_class* Axis_ptr, parameter_class* myParame
 
 	this->myPWM->init(myAxis->my_instance, trajectory);
 	this->myPWM->start();
+
+	this->myRawADC[0] = 0;
+	this->myRawADC[1] = 0;
+	this->myRawADC[2] = 0;
+	this->myRawADC[3] = 0;
 
 }
 
@@ -51,7 +57,6 @@ bool current_control_class::refresh_parameter(void)
 	return true;
 }
 
-
 bool current_control_class::setAngle(float angle)
 {
 	mAngle = angle;
@@ -65,6 +70,8 @@ float current_control_class::getPosition(void)
 
 bool current_control_class::run(void)
 {
+	read_adc();
+
 	float angle = 0;
 	if (myAxis->my_instance == 0)
 		{
@@ -81,6 +88,16 @@ bool current_control_class::run(void)
 	return 0;
 }
 
+// ADC init() // Offset messen etc, Injected ADCs einstellen, dann im DR auslesen, ADC kalibireren
+
+// ADC auslesen; Richtung ermitteln anhand der gesetzten PWM
+void current_control_class::read_adc(void)
+{
+    this->myRawADC[0] = HAL_ADCEx_InjectedGetValue(&hadc1, ADC_INJECTED_RANK_1);
+    this->myRawADC[1] = HAL_ADCEx_InjectedGetValue(&hadc1, ADC_INJECTED_RANK_2);
+    this->myRawADC[2] = HAL_ADCEx_InjectedGetValue(&hadc1, ADC_INJECTED_RANK_3);
+    this->myRawADC[3] = HAL_ADCEx_InjectedGetValue(&hadc1, ADC_INJECTED_RANK_4);
+}
 
 
 
