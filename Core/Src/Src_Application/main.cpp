@@ -85,17 +85,6 @@ PID_class*              myPID_pos_ptr[MAX_NUM_AXIS];
 current_control_class*  myCurrent_Control[MAX_NUM_AXIS];
 set_pwm_class*          myPWM_ptr[MAX_NUM_AXIS];
 
-// nur für Debug -> entfernen
-struct adc_diag_t {
-    bool     trgo2_ok;      // TRGO2 = OC5REF
-    uint32_t ccr5;          // erwartet: dein eingetragener Wert (z. B. 8500)
-    bool     armed;         // ADC wartet auf Trigger
-    bool     jeos_seen;     // ADC hat nach dem Löschen wieder eine Sequenz beendet
-    uint16_t jdr_a[4];      // Ergebnis zu Zeitpunkt 1
-    uint16_t jdr_b[4];      // Ergebnis zu Zeitpunkt 2
-    bool     jdr_changed;   // mindestens ein Wert hat sich geändert
-} adc_diag;
-
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -239,21 +228,30 @@ int main(void)
   myAxis[0].enabled = true;
   myPID_pos_ptr[0]->servo_on_off(true);
 
-   #if AXIS1_ENABLED
-   myAxis[1].enabled = true;
-   myPID_pos_ptr[1]->servo_on_off(true);
-#endif
+  #if AXIS1_ENABLED
+  myAxis[1].enabled = true;
+  myPID_pos_ptr[1]->servo_on_off(true);
+  #endif
 
   // Start ADC
   HAL_ADCEx_Calibration_Start(&hadc1, ADC_SINGLE_ENDED);
   HAL_ADCEx_InjectedStart(&hadc1);
 
-  // TODO Offset ermitteln; 2. ADC
-
-  // ADC Test -> nur für Debug
-  HAL_Delay(10);                           // PWM läuft ein paar Perioden
-  adc_selftest(); 
-
+  // TODO 2. ADC
+  // Offset ermitteln
+  for(uint8_t i=0;i<MAX_NUM_AXIS;i++)
+  {
+    myAxis_ptr[i]->myCurrent_Control->setCurrentToZero(); // PWM auf LOW
+    if(i == 0)
+    {
+      myAxis_ptr[i]->myCurrent_Control->calibrateADC_Offsets(&hadc1);
+    }
+    else
+    {
+      //myAxis[i].myCurrent_Control->calibrateADC_Offsets(&hadc4);
+    }
+  } 
+  
   HAL_TIM_Base_Start_IT(&htim3); // Start Servo-Loop
 
   /* USER CODE END 2 */
@@ -372,13 +370,13 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 				joint1_old = OD_PERSIST_COMM.x6001_joint1;
 			}
 
-#if AXIS1_ENABLED
+      #if AXIS1_ENABLED
 			if(axis_to_run == 1 && (joint2_old != OD_PERSIST_COMM.x6002_joint2))
 			{
 				myAxis_ptr[axis_to_run]->myTrajectory->setpoint = OD_PERSIST_COMM.x6002_joint2 * JOINT1_SP_SCALE; // Skalierung je Platine (typedefs.h)
 				joint2_old = OD_PERSIST_COMM.x6002_joint2;
 			}
-#endif
+      #endif
 
 			myAxis_ptr[axis_to_run]->run();
 
@@ -399,27 +397,6 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
   /* NOTE : This function should not be modified, when the callback is needed,
             the HAL_TIM_PeriodElapsedCallback could be implemented in the user file
    */
-}
-
-// nur für Debug -> entfernen
-void adc_selftest()
-{
-    adc_diag.trgo2_ok = (htim1.Instance->CR2 & TIM_CR2_MMS2) == TIM_TRGO2_OC5REF;
-    adc_diag.ccr5     = __HAL_TIM_GET_COMPARE(&htim1, TIM_CHANNEL_5);
-    adc_diag.armed    = (hadc1.Instance->CR & ADC_CR_JADSTART) != 0;
-
-    for (int i = 0; i < 4; i++)
-        adc_diag.jdr_a[i] = HAL_ADCEx_InjectedGetValue(&hadc1, ADC_INJECTED_RANK_1 + i);
-
-    __HAL_ADC_CLEAR_FLAG(&hadc1, ADC_FLAG_JEOS);
-    HAL_Delay(2);                                    // ≈ 10 PWM-Perioden bei 5 kHz
-    adc_diag.jeos_seen = __HAL_ADC_GET_FLAG(&hadc1, ADC_FLAG_JEOS);
-
-    adc_diag.jdr_changed = false;
-    for (int i = 0; i < 4; i++) {
-        adc_diag.jdr_b[i] = HAL_ADCEx_InjectedGetValue(&hadc1, ADC_INJECTED_RANK_1 + i);
-        if (adc_diag.jdr_b[i] != adc_diag.jdr_a[i]) adc_diag.jdr_changed = true;
-    }
 }
 
 /* USER CODE END 4 */

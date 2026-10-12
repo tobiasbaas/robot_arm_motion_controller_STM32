@@ -28,10 +28,16 @@ void current_control_class::init(axis_class* Axis_ptr, parameter_class* myParame
 	this->myPWM->init(myAxis->my_instance, trajectory);
 	this->myPWM->start();
 
-	this->myRawADC[0] = 0;
-	this->myRawADC[1] = 0;
-	this->myRawADC[2] = 0;
-	this->myRawADC[3] = 0;
+	this->myADC_Values[0] = 0;
+	this->myADC_Values[1] = 0;
+	this->myADC_Values[2] = 0;
+	this->myADC_Values[3] = 0;
+
+	this->myADC_Offset[0] = 0;
+	this->myADC_Offset[1] = 0;
+	this->myADC_Offset[2] = 0;
+	this->myADC_Offset[3] = 0;
+
 
 }
 
@@ -70,7 +76,7 @@ float current_control_class::getPosition(void)
 
 bool current_control_class::run(void)
 {
-	read_adc();
+	readADC();
 
 	float angle = 0;
 	if (myAxis->my_instance == 0)
@@ -91,13 +97,77 @@ bool current_control_class::run(void)
 // ADC init() // Offset messen etc, Injected ADCs einstellen, dann im DR auslesen, ADC kalibireren
 
 // ADC auslesen; Richtung ermitteln anhand der gesetzten PWM
-void current_control_class::read_adc(void)
+void current_control_class::readADC(void)
 {
-    this->myRawADC[0] = HAL_ADCEx_InjectedGetValue(&hadc1, ADC_INJECTED_RANK_1);
-    this->myRawADC[1] = HAL_ADCEx_InjectedGetValue(&hadc1, ADC_INJECTED_RANK_2);
-    this->myRawADC[2] = HAL_ADCEx_InjectedGetValue(&hadc1, ADC_INJECTED_RANK_3);
-    this->myRawADC[3] = HAL_ADCEx_InjectedGetValue(&hadc1, ADC_INJECTED_RANK_4);
+    this->myADC_Values[0] = rawToAmps(HAL_ADCEx_InjectedGetValue(&hadc1, ADC_INJECTED_RANK_1), this->myADC_Offset[0]);
+    this->myADC_Values[1] = rawToAmps(HAL_ADCEx_InjectedGetValue(&hadc1, ADC_INJECTED_RANK_2), this->myADC_Offset[1]);
+    this->myADC_Values[2] = rawToAmps(HAL_ADCEx_InjectedGetValue(&hadc1, ADC_INJECTED_RANK_3), this->myADC_Offset[2]);
+    this->myADC_Values[3] = rawToAmps(HAL_ADCEx_InjectedGetValue(&hadc1, ADC_INJECTED_RANK_4), this->myADC_Offset[3]);
 }
 
 
+// Ermittelt die ADC-Werte bei 0 A für alle 4 Kanäle (Rank 1..4).
+// Rückgabe true = ok, offset_out[] ist gültig. Bei false bleibt offset_out unverändert.
+bool current_control_class::calibrateADC_Offsets(ADC_HandleTypeDef* hadc)
+{
+	constexpr uint32_t CAL_SAMPLES     = 256;     // Mittelung über 256 Sequenzen
+	constexpr uint16_t OFFSET_EXPECTED = 1861;    // 1,5 V / 3,3 V * 4095	
+	constexpr uint16_t OFFSET_TOL      = 200;     // ≈ ±0,16 V; weiter weg = Hardwarefehler oder Strom != 0
 
+    uint32_t sum[4] = {0, 0, 0, 0};
+
+    __HAL_ADC_CLEAR_FLAG(hadc, ADC_FLAG_JEOS);          // alte Ergebnisse verwerfen
+
+    for (uint32_t n = 0; n < CAL_SAMPLES; n++)
+    {
+		// 256 mal messen und später mittelwert bilden
+
+        // Auf das Ende der nächsten Injected-Sequenz warten (kommt einmal pro PWM-Periode)
+        const uint32_t t0 = HAL_GetTick();
+        while (!__HAL_ADC_GET_FLAG(hadc, ADC_FLAG_JEOS))
+        {
+            if (HAL_GetTick() - t0 > 5)
+			{
+				// TODO: Error
+				return false;   // kein Trigger: ADC/Timer läuft nicht
+			} 
+        }
+
+        sum[0] += HAL_ADCEx_InjectedGetValue(hadc, ADC_INJECTED_RANK_1);
+        sum[1] += HAL_ADCEx_InjectedGetValue(hadc, ADC_INJECTED_RANK_2);
+        sum[2] += HAL_ADCEx_InjectedGetValue(hadc, ADC_INJECTED_RANK_3);
+        sum[3] += HAL_ADCEx_InjectedGetValue(hadc, ADC_INJECTED_RANK_4);
+
+        __HAL_ADC_CLEAR_FLAG(hadc, ADC_FLAG_JEOS);
+    }
+
+    // Mittelwert (gerundet) und Plausibilitätsprüfung
+    uint16_t result[4];
+    for (int i = 0; i < 4; i++)
+    {
+        result[i] = (uint16_t)((sum[i] + CAL_SAMPLES / 2) / CAL_SAMPLES);	// Mittelwert + runden
+
+        const int32_t dev = (int32_t)result[i] - (int32_t)OFFSET_EXPECTED;
+        if (dev > OFFSET_TOL || dev < -(int32_t)OFFSET_TOL)
+		{
+			// TODO: Error
+			 return false;	// Offset unplausibel bzw. zu weit weg
+		}
+    }
+
+    for (int i = 0; i < 4; i++) this->myADC_Offset[i] = result[i];
+    return true;
+}
+
+// Rohwert -> Strom in A, mit dem ermittelten Offset des jeweiligen Kanals
+float current_control_class::rawToAmps(uint16_t raw, uint16_t offset)
+{
+    return ((int32_t)raw - (int32_t)offset) * current_sens::AMPS_PER_COUNT;
+}
+
+
+void current_control_class::setCurrentToZero()
+{
+	this->myPWM->run(0, 0); // PWM auf LOW
+	return;
+}

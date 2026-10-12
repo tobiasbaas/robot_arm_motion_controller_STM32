@@ -171,4 +171,3 @@ void set_pwm_class::run(float sin, float cos)
 		}
 	}
 }
-

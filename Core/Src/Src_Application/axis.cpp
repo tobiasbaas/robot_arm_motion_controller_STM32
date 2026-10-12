@@ -31,7 +31,11 @@ bool axis_class::init(uint8_t i, error_class* myError, trajectory_class* traject
 	axis_class::myPid_Pos			= pid_pos;
 	axis_class::myCurrent_Control	= current_control;
 	axis_class::myDR				= DR;
-	axis_class::myParameter		= myParameter;
+	axis_class::myParameter			= myParameter;
+
+	// get ADC Offset
+	
+
 	return true;
 }
 

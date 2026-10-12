@@ -150,8 +150,8 @@ extern const float PHASEFACTORB[3];
 #define	SERVO_AXIS_FRQ 		SERVO_FRQ /	MAX_NUM_AXIS	// Servo Frequenz
 #define	SERVO_AXIS_TIME		MAX_NUM_AXIS / SERVO_FRQ 	// Servo Time
 
-#define	SYSTEM_SERVO_TIME 	0.0001 		// Servo Zyklus Zeit
-#define TIMER_COUTER_MAX	160000		// Max counter for timer of servo frq (Timer clock 160 MHz)
+#define	SYSTEM_SERVO_TIME 	0.0001 		// Servo Zyklus Zeit in [??]
+#define TIMER_COUTER_MAX	160000		// Max counter for timer of servo frq (Timer clock 160 MHz) //TODO Not 170 MHz?
 
 // PI
 #define M_PI 	3.141592654		// PI
