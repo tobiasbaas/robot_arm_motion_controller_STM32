@@ -93,22 +93,26 @@
 #elif defined(CONTROLLER_3) // ---------- Board 3 ----------
 	#define CONTROLLER_NAME_STR "LIS-MC-Board3" // Labor Inform. Sys. - Motion Controller
 
-	// TESTMOTOR 23SSM8440-EC1000 (ACT; 1,8°; 2,4 V; 4,0 A/Phase; 0,6 Ohm; 2,5 mH)
-	// Temporäre Testmotor-Konfiguration. Rueckbau auf Originalmotor M5:
-	// diese eine Zeile auskommentieren:
-	#define TESTMOTOR_23SSM8440
-
 	// Driver 3A
 	#define AXA_MOTORSTEP_COUNT	200
-	#ifdef TESTMOTOR_23SSM8440
-		#define AXA_MAX_V		2.4	// Testmotor: begrenzt Phasenstrom auf ~4 A bei 0,6 Ohm
-	#else
-		#define AXA_MAX_V		12.0	// Original M5
-	#endif
+	#define AXA_MAX_V			12.0	// Original M5
 
 	// Driver 3B
 	#define AXB_MOTORSTEP_COUNT	200
 	#define AXB_MAX_V			4.0
+#endif
+
+/*****************************************************
+* TESTMOTOR-OVERRIDE (fuer ALLE Boards und BEIDE Achsen)
+* 23SSM8440-EC1000 (ACT; 1,8°; 2,4 V; 4,0 A/Phase; 0,6 Ohm; 2,5 mH)
+* Auskommentieren -> Originalmotoren werden verwendet.
+*******************************************************/
+#define USE_TEST_MOTOR
+#ifdef USE_TEST_MOTOR
+	#undef  AXA_MAX_V
+	#undef  AXB_MAX_V
+	#define AXA_MAX_V	2.4	// Testmotor: begrenzt Phasenstrom auf ~4 A bei 0,6 Ohm
+	#define AXB_MAX_V	2.4	// Testmotor: begrenzt Phasenstrom auf ~4 A bei 0,6 Ohm
 #endif
 
 /* Die PHASEFACTOR-Arrays pro Platine sind in set_pwm.cpp definiert (dort je
