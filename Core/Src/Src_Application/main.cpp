@@ -222,10 +222,10 @@ int main(void)
 
   //send_string("Startup Controller...", true);
 
-   #if AXIS1_ENABLED
-   myAxis[1].enabled = true;
-   myPID_pos_ptr[1]->servo_on_off(true);
-#endif
+  #if AXIS1_ENABLED
+  myAxis[1].enabled = true;
+  myPID_pos_ptr[1]->servo_on_off(true);
+  #endif
 
    myAxis[0].enabled = true;
    myPID_pos_ptr[0]->servo_on_off(true);
