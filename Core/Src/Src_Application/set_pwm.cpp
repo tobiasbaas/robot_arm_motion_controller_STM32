@@ -51,6 +51,7 @@ void set_pwm_class::init(int index, trajectory_class* trajectory)
 		HAL_GPIO_WritePin(MOT_A_M1_GPIO_Port, MOT_A_M1_Pin, GPIO_PIN_SET); 	// TODO: Fehler? Müssten die Pins nicht eher auf Low gesetzt werden?
 		HAL_GPIO_WritePin(MOT_A_M2_GPIO_Port, MOT_A_M2_Pin, GPIO_PIN_SET);	// TODO: Fehler? Müssten die Pins nicht eher auf Low gesetzt werden?
 		HAL_GPIO_WritePin(MOT_A_M3_GPIO_Port, MOT_A_M3_Pin, GPIO_PIN_SET);	// TODO: Fehler? Müssten die Pins nicht eher auf Low gesetzt werden?
+		
 		HAL_TIM_PWM_Start(htim, TIM_CHANNEL_1);
 		HAL_TIM_PWM_Start(htim, TIM_CHANNEL_2);
 		HAL_TIM_PWM_Start(htim, TIM_CHANNEL_3);
@@ -69,6 +70,8 @@ void set_pwm_class::init(int index, trajectory_class* trajectory)
 		HAL_TIM_PWM_Start(htim, TIM_CHANNEL_2);
 		HAL_TIM_PWM_Start(htim, TIM_CHANNEL_3);
 		HAL_TIM_PWM_Start(htim, TIM_CHANNEL_4);
+		HAL_TIM_PWM_Start(htim, TIM_CHANNEL_5);  // interner Trigger-Kanal für den ADC	
+
 	}
 	else
 	{

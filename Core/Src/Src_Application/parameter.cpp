@@ -311,6 +311,9 @@ bool parameter_class::read_eeprom_parameter(PARAM_DEV *module_parameter, uint32_
 			module_parameter[n].value.ui64 = p.ui64;	// copy to parameter list
 			address += 8;							// increase Flash address by 8 byte (ui64)
 		}
+		// Count (Parameter [0]) ist Compile-Time-Wahrheit, nicht der (evtl. veraltete)
+		// Flash-Wert. Sonst verkuerzt ein alter Count nach Parameter-Aenderungen die Liste.
+		module_parameter[0].value.ui16 = size;
 	}
 	else // write value to terminal
 	{
@@ -349,6 +352,9 @@ bool parameter_class::write_eeprom_parameter(PARAM_DEV *module_parameter, uint32
 	{
 		data[n] = module_parameter[n].value.ui64;
 	}
+	// Count (Parameter [0]) immer mit der gueltigen Anzahl schreiben, damit ein
+	// evtl. veralteter In-Memory-Wert nicht ins Flash gelangt.
+	data[0] = size;
 	// write data to flash (one page per module)
 	this->write_data_to_flash(data,size,address);
     return ret;

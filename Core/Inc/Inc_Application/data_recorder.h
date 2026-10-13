@@ -41,6 +41,8 @@ class data_recorder_class
 		parameter_class* 	myParameter;
 		error_class* 		myError;
 
+		bool trigger_start_internal(uint8_t inst, TRIGGER_TYPE type);
+
 		/*
 		// TODO delete?
 		DR_TABELS dr_table[3] =
@@ -56,10 +58,12 @@ class data_recorder_class
 		
 		void init(void);
 		bool trigger_start(TRIGGER_TYPE type);
+		bool trigger_start(uint8_t instance, TRIGGER_TYPE type);
 		void run(void);
 		bool setParameter(CMD_STRUCT* cmd);
 		bool refresh_parameter(void);
 		bool table_ptr_update(uint16_t id, uint8_t trace);
+		void update_table_pointers(void);
 		bool send_DR_hlp(void);
 		bool send_data(void);
 		bool send_data_binary(void);
@@ -67,23 +71,26 @@ class data_recorder_class
 		//bool setup(void);
 		//bool read_record(void);
 
-		#define MAX_NUM_PARAMETER_DR 8
+		#define MAX_NUM_PARAMETER_DR 9
 		PARAM_DEV module_parameter[MAX_NUM_PARAMETER_DR] =
 		{
 			{0x01, _UINT16, 	MAX_NUM_PARAMETER_DR,MAX_NUM_PARAMETER_DR, MAX_NUM_PARAMETER_DR, true, "Number of Parameters in Data Recorder Module"}, // every Module needs this parameter with number of
 			{0x10, _UINT16, 	10, 						1, 5000,							false, "Record Rate"},
 			{0x11, _UINT16, 	1, 						0, 2,							false, "Data Recorder Trigger Type"},				// 0 = OFF, 1 = MOV
-			{0x12, _UINT16, 	4, 						0, 0,							false, "Number of Tables (1 to 4)"},
-			{0x21, _UINT16, 	1, 						0, MAX_NUM_DR_TRACES_TO_CHOOSE,	false, "Table 1 ID"},		// [4]
-			{0x22, _UINT16, 	2, 						0, MAX_NUM_DR_TRACES_TO_CHOOSE,	false, "Table 2 ID"},
-			{0x23, _UINT16, 	6, 						0, MAX_NUM_DR_TRACES_TO_CHOOSE,	false, "Table 3 ID"},
-			{0x24, _UINT16, 	7, 						0, MAX_NUM_DR_TRACES_TO_CHOOSE,	false, "Table 4 ID"},
+			{0x12, _UINT16, 	0, 						0, MAX_NUM_AXIS-1,				false, "Default Axis (used if no instance given)"},	// [3]
+			{0x13, _UINT16, 	4, 						0, 4,							false, "Number of Tables (1 to 4)"},		// [4]
+			{0x21, _UINT16, 	1, 						0, MAX_NUM_DR_TRACES_TO_CHOOSE,	false, "Table 1 ID"},		// [5]
+			{0x22, _UINT16, 	2, 						0, MAX_NUM_DR_TRACES_TO_CHOOSE,	false, "Table 2 ID"},		// [6]
+			{0x23, _UINT16, 	6, 						0, MAX_NUM_DR_TRACES_TO_CHOOSE,	false, "Table 3 ID"},		// [7]
+			{0x24, _UINT16, 	7, 						0, MAX_NUM_DR_TRACES_TO_CHOOSE,	false, "Table 4 ID"},		// [8]
 			//{0x25, _UINT16, 	0, 						0, MAX_DR_TRACES,	false, "Table 5 ID"},//NEW
 			//{0x26, _UINT16, 	0, 						0, MAX_DR_TRACES,	false, "Table 6 ID"},//NEW
 			//{0x27, _UINT16, 	0, 						0, MAX_DR_TRACES,	false, "Table 7 ID"},//NEW
 			//{0x28, _UINT16, 	0, 						0, MAX_DR_TRACES,	false, "Table 8 ID"},//NEW
 		};
 
+		uint8_t recInstance;	// Welche Instanz aufgenommen wird (z.B. 0 -> Achse A, 1 -> Achse B)
+		uint8_t recDefaultInstance;	// Default-Achse, falls kein Achsbezug im Trigger (Parameter 0x13)
 		uint16_t 		rec_cnt;										// record table value counter for record
 		float 			record_table_1[DR_TABLE_LENGTH] = {0};		// record table 1
 		float 			record_table_2[DR_TABLE_LENGTH] = {0};		// record table 2

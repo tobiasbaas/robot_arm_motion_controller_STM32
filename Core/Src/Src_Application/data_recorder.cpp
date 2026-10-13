@@ -22,6 +22,8 @@ data_recorder_class::data_recorder_class(parameter_class* myParameter_ptr, error
 	data_recorder_class::rec_on 			= false;
 	data_recorder_class::record_tables_max 	= 4;
 	data_recorder_class::trigger_type		= DR_TGR_OFF;
+	data_recorder_class::recInstance		= 0;
+	data_recorder_class::recDefaultInstance	= 0;
 	data_recorder_class::rec_table_ptr[0] 	= NULL;
 	data_recorder_class::rec_table_ptr[1] 	= NULL;
 	data_recorder_class::rec_table_ptr[2] 	= NULL;
@@ -39,7 +41,7 @@ void data_recorder_class::init(void)
 	data_recorder_class::refresh_parameter();
 }
 
-bool data_recorder_class::trigger_start(TRIGGER_TYPE type)
+bool data_recorder_class::trigger_start_internal(uint8_t inst, TRIGGER_TYPE type)
 {
 	bool ret = true;
 
@@ -47,6 +49,16 @@ bool data_recorder_class::trigger_start(TRIGGER_TYPE type)
 	{
 		if(this->rec_on == false)	// if no recording is actually processed --> start a new
 		{
+			if(inst >= MAX_NUM_AXIS)	// kein/ungueltiger Achsbezug (z.B. REC; --> 100) --> Default-Achse
+			{
+				inst = this->recDefaultInstance;
+			}
+			if(inst >= MAX_NUM_AXIS)	// Sicherheitsnetz
+			{
+				inst = 0;
+			}
+			this->recInstance = inst;
+			this->update_table_pointers();	// Pointer auf die gueltige Achse umbauen
 			this->record_rate_cnt = 0;
 			this->rec_cnt = 0;
 			this->rec_on = true;
@@ -56,8 +68,22 @@ bool data_recorder_class::trigger_start(TRIGGER_TYPE type)
 			ret = false;
 		}
 	}
+	else
+	{
+		ret = false; // trigger source does not match
+	}
 	
-	return ret; // TODO why return true if trigger_type is wrong? 
+	return ret;
+}
+
+bool data_recorder_class::trigger_start(TRIGGER_TYPE type)
+{
+	return this->trigger_start_internal(this->recDefaultInstance, type);
+}
+
+bool data_recorder_class::trigger_start(uint8_t instance, TRIGGER_TYPE type)
+{
+	return this->trigger_start_internal(instance, type);
 }
 
 void data_recorder_class::run(void)
@@ -101,22 +127,37 @@ bool data_recorder_class::refresh_parameter(void)
 	bool ret = true;
 	this->record_rate_max 	= this->module_parameter[1].value.ui16;
 	this->trigger_type 		= (TRIGGER_TYPE)this->module_parameter[2].value.ui16;
-	ret = this->table_ptr_update(this->module_parameter[4].value.ui16,0);
-	ret = this->table_ptr_update(this->module_parameter[5].value.ui16,1);
-	ret = this->table_ptr_update(this->module_parameter[6].value.ui16,2);
-	ret = this->table_ptr_update(this->module_parameter[7].value.ui16,3);
-	//ret = this->table_ptr_update(this->module_parameter[8].value.ui16,4);//NEW
-	//ret = this->table_ptr_update(this->module_parameter[9].value.ui16,5);//NEW
-	//ret = this->table_ptr_update(this->module_parameter[10].value.ui16,6);//NEW
-	//ret = this->table_ptr_update(this->module_parameter[11].value.ui16,7);//NEW
+	this->recDefaultInstance = this->module_parameter[3].value.ui16;
+	if(this->recDefaultInstance >= MAX_NUM_AXIS)	// Sicherheitsnetz (z.B. verschobener Alt-Wert)
+	{
+		this->recDefaultInstance = 0;
+	}
+
+	if(this->rec_on == false)
+	{
+		this->recInstance = this->recDefaultInstance;
+		this->update_table_pointers();
+	}
 	return ret;
+}
+
+void data_recorder_class::update_table_pointers(void)
+{
+	this->table_ptr_update(this->module_parameter[5].value.ui16,0);
+	this->table_ptr_update(this->module_parameter[6].value.ui16,1);
+	this->table_ptr_update(this->module_parameter[7].value.ui16,2);
+	this->table_ptr_update(this->module_parameter[8].value.ui16,3);
 }
 
 bool data_recorder_class::table_ptr_update(uint16_t id,uint8_t trace)
 {
 
 	bool ret = true;
-	uint8_t axis;
+
+	if(this->recInstance >= MAX_NUM_AXIS)	// Sicherheitsnetz
+	{
+		this->recInstance = 0;
+	}
 
 	// check for valid trace
 	if((trace >= 0) && (trace < 4))
@@ -131,71 +172,61 @@ bool data_recorder_class::table_ptr_update(uint16_t id,uint8_t trace)
 		this->myError->add(DATARECORDER_MOD, 1000, __FILE__, __LINE__); // TODO Fehler anlegen!
 	}
 
-	// get axis from id (case grater 100 for axis 1 else axis 0)
-	if(id >= 100)
-	{
-		axis = 1;
-		id = id-100;
-	}
-	else
-	{
-		axis = 0;
-	}
 
 	// set pointer to variable
 	switch(id)
 	{
 		case 0:		// no data (0.0)
 					this->rec_table_ptr[trace] = &this->null;
-					sprintf(&this->table_name[trace][0],"NON - Axis: %d",axis);
+					sprintf(&this->table_name[trace][0],"NON - Axis: %d",recInstance);
 					break;
 		case 1:		// Actual Position
-					this->rec_table_ptr[trace] = &this->myAxis[axis]->myPos->position;
-					sprintf(&this->table_name[trace][0],"Position - Axis: %d",axis);
+					this->rec_table_ptr[trace] = &this->myAxis[recInstance]->myPos->position;
+					sprintf(&this->table_name[trace][0],"Position - Axis: %d",recInstance);
 					break;
 		case 2:		// slowed Target
-					this->rec_table_ptr[trace] = &this->myAxis[axis]->myTrajectory->slowed_target;
-					sprintf(&this->table_name[trace][0],"Slowed Target - Axis: %d",axis);
+					this->rec_table_ptr[trace] = &this->myAxis[recInstance]->myTrajectory->slowed_target;
+					sprintf(&this->table_name[trace][0],"Slowed Target - Axis: %d",recInstance);
 					break;
 		case 3:		// Position Error
-					this->rec_table_ptr[trace] = &this->myAxis[axis]->myPid_Pos->error;
-					sprintf(&this->table_name[trace][0],"Position Error - Axis: %d",axis);
+					this->rec_table_ptr[trace] = &this->myAxis[recInstance]->myPid_Pos->error;
+					sprintf(&this->table_name[trace][0],"Position Error - Axis: %d",recInstance);
 					break;
 		case 4:		// Setpoint
-					this->rec_table_ptr[trace] = &this->myAxis[axis]->myTrajectory->setpoint;
-					sprintf(&this->table_name[trace][0],"Setpoint - Axis: %d",axis);
+					this->rec_table_ptr[trace] = &this->myAxis[recInstance]->myTrajectory->setpoint;
+					sprintf(&this->table_name[trace][0],"Setpoint - Axis: %d",recInstance);
 					break;
 		case 5:		// Control out
-					this->rec_table_ptr[trace] = &this->myAxis[axis]->myPid_Pos->pid_y;
-					sprintf(&this->table_name[trace][0],"Control Out - Axis: %d",axis);
+					this->rec_table_ptr[trace] = &this->myAxis[recInstance]->myPid_Pos->pid_y;
+					sprintf(&this->table_name[trace][0],"Control Out - Axis: %d",recInstance);
 					break;
 		case 6:		// Velocity
-					this->rec_table_ptr[trace] = &this->myAxis[axis]->myTrajectory->vel;
-					sprintf(&this->table_name[trace][0],"Velocity - Axis: %d",axis);
+					this->rec_table_ptr[trace] = &this->myAxis[recInstance]->myTrajectory->vel;
+					sprintf(&this->table_name[trace][0],"Velocity - Axis: %d",recInstance);
 					break;
 		case 7:		// Acceleration
-					this->rec_table_ptr[trace] = &this->myAxis[axis]->myTrajectory->acc;
-					sprintf(&this->table_name[trace][0],"Acceleration - Axis: %d",axis);
+					this->rec_table_ptr[trace] = &this->myAxis[recInstance]->myTrajectory->acc;
+					sprintf(&this->table_name[trace][0],"Acceleration - Axis: %d",recInstance);
 					break;
 		// case 8:		// PID out Id
 		// 			this->rec_table_ptr[trace] = &this->myAxis[axis]->myCurrent_Control->PI[FOC_D].pid_y;
 		// 			sprintf(&this->table_name[trace][0],"FOC (d) PI Control Out - Axis: %d",axis);
 		// 			break;
 		case 9:		// Motor current
-					this->rec_table_ptr[trace] = &this->myAxis[axis]->myCurrent_Control->myADC_Values[0];
-					sprintf(&this->table_name[trace][0],"Current Phase1-ShuntA - Axis: %d",axis);
+					this->rec_table_ptr[trace] = &this->myAxis[recInstance]->myCurrent_Control->myADC_Values[0];
+					sprintf(&this->table_name[trace][0],"Current Phase1-ShuntA - Axis: %d",recInstance);
 					break;
 		case 10:	// Motor current
-					this->rec_table_ptr[trace] = &this->myAxis[axis]->myCurrent_Control->myADC_Values[1];
-					sprintf(&this->table_name[trace][0],"Current Phase1-ShuntB - Axis: %d",axis);
+					this->rec_table_ptr[trace] = &this->myAxis[recInstance]->myCurrent_Control->myADC_Values[1];
+					sprintf(&this->table_name[trace][0],"Current Phase1-ShuntB - Axis: %d",recInstance);
 					break;
 		case 11:		// Motor current
-					this->rec_table_ptr[trace] = &this->myAxis[axis]->myCurrent_Control->myADC_Values[2];
-					sprintf(&this->table_name[trace][0],"Current Phase2-ShuntC - Axis: %d",axis);
+					this->rec_table_ptr[trace] = &this->myAxis[recInstance]->myCurrent_Control->myADC_Values[2];
+					sprintf(&this->table_name[trace][0],"Current Phase2-ShuntC - Axis: %d",recInstance);
 					break;
 		case 12:	// Motor current
-					this->rec_table_ptr[trace] = &this->myAxis[axis]->myCurrent_Control->myADC_Values[3];
-					sprintf(&this->table_name[trace][0],"Current Phase2-ShuntD - Axis: %d",axis);
+					this->rec_table_ptr[trace] = &this->myAxis[recInstance]->myCurrent_Control->myADC_Values[3];
+					sprintf(&this->table_name[trace][0],"Current Phase2-ShuntD - Axis: %d",recInstance);
 					break;
 		// case 9:		// PID out Iq
 		// 			this->rec_table_ptr[trace] = &this->myAxis[axis]->myCurrent_Control->PI[FOC_Q].pid_y;
@@ -271,7 +302,7 @@ bool data_recorder_class::table_ptr_update(uint16_t id,uint8_t trace)
 		// 			break;
 		default:	// no data (0.0)
 					this->rec_table_ptr[trace] = &this->null;
-					sprintf(&this->table_name[trace][0],"NON - Axis: %d",axis);
+					sprintf(&this->table_name[trace][0],"NON - Axis: %d",recInstance);
 					ret = false;
 	};
 	return ret;

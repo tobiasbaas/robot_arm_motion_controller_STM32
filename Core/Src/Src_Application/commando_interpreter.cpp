@@ -876,7 +876,7 @@ bool ComInt_class::mov(void)
 	else
 	{
 		this->myAxis[this->myCmd.i_instance]->myTrajectory->set_target(target);
-		this->myDR->trigger_start(DR_TGR_MOV);
+		this->myDR->trigger_start(this->myCmd.i_instance, DR_TGR_MOV);
 	}
     return ret;
 }
@@ -901,7 +901,7 @@ bool ComInt_class::mvr(void)
 	{
 		float new_target = target + this->myAxis[this->myCmd.i_instance]->myTrajectory->setpoint;
 		this->myAxis[this->myCmd.i_instance]->myTrajectory->set_target(new_target);
-		this->myDR->trigger_start(DR_TGR_MOV);
+		this->myDR->trigger_start(this->myCmd.i_instance, DR_TGR_MOV);
 	}
     return ret;
 }
@@ -995,7 +995,14 @@ COMMAND START RECORDING --> "REC"
 */
 bool ComInt_class::rec(void)
 {
-	this->myDR->trigger_start(DR_TGR_MOV);
+	if(this->myCmd.i_instance < MAX_NUM_AXIS)	// explizit angegebene Achse (REC:AXS_x)
+	{
+		this->myDR->trigger_start(this->myCmd.i_instance, DR_TGR_MOV);
+	}
+	else	// Standard: Default-Achse (REC ohne Achsbezug)
+	{
+		this->myDR->trigger_start(DR_TGR_MOV);
+	}
 	send_string("#RECORDING TRIGGERED", true);
     return true;
 }
@@ -1020,7 +1027,7 @@ bool ComInt_class::run_current_loop(void)
 	else
 	{
 		//this->myAxis[this->myCmd.i_instance]->myCurrent_Control->start_current_run(current);
-		this->myDR->trigger_start(DR_TGR_MOV);
+		this->myDR->trigger_start(this->myCmd.i_instance, DR_TGR_MOV);
 	}
 	return ret;
 }

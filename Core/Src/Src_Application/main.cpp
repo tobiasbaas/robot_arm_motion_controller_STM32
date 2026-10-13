@@ -84,7 +84,6 @@ data_recorder_class*    myDR_ptr;
 PID_class*              myPID_pos_ptr[MAX_NUM_AXIS];
 current_control_class*  myCurrent_Control[MAX_NUM_AXIS];
 set_pwm_class*          myPWM_ptr[MAX_NUM_AXIS];
-
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -237,8 +236,10 @@ int main(void)
   HAL_ADCEx_Calibration_Start(&hadc1, ADC_SINGLE_ENDED);
   HAL_ADCEx_InjectedStart(&hadc1);
 
-  // TODO 2. ADC
-  // Offset ermitteln
+  HAL_ADCEx_Calibration_Start(&hadc4, ADC_SINGLE_ENDED);   
+  HAL_ADCEx_InjectedStart(&hadc4);     
+
+  // ADC Offset ermitteln
   for(uint8_t i=0;i<MAX_NUM_AXIS;i++)
   {
     myAxis_ptr[i]->myCurrent_Control->setCurrentToZero(); // PWM auf LOW
@@ -248,7 +249,7 @@ int main(void)
     }
     else
     {
-      //myAxis[i].myCurrent_Control->calibrateADC_Offsets(&hadc4);
+      myAxis_ptr[i]->myCurrent_Control->calibrateADC_Offsets(&hadc4);
     }
   } 
   
@@ -398,7 +399,6 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
             the HAL_TIM_PeriodElapsedCallback could be implemented in the user file
    */
 }
-
 /* USER CODE END 4 */
 
 /**

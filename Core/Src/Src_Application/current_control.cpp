@@ -90,7 +90,6 @@ bool current_control_class::run(void)
 
 
 	this->myPWM->run(sinf(angle), cosf(angle));
-
 	return 0;
 }
 
@@ -99,10 +98,26 @@ bool current_control_class::run(void)
 // ADC auslesen; Richtung ermitteln anhand der gesetzten PWM
 void current_control_class::readADC(void)
 {
-    this->myADC_Values[0] = rawToAmps(HAL_ADCEx_InjectedGetValue(&hadc1, ADC_INJECTED_RANK_1), this->myADC_Offset[0]);
-    this->myADC_Values[1] = rawToAmps(HAL_ADCEx_InjectedGetValue(&hadc1, ADC_INJECTED_RANK_2), this->myADC_Offset[1]);
-    this->myADC_Values[2] = rawToAmps(HAL_ADCEx_InjectedGetValue(&hadc1, ADC_INJECTED_RANK_3), this->myADC_Offset[2]);
-    this->myADC_Values[3] = rawToAmps(HAL_ADCEx_InjectedGetValue(&hadc1, ADC_INJECTED_RANK_4), this->myADC_Offset[3]);
+	if(this->myAxis->my_instance == 0)
+	{
+		this->myADC_Values[0] = rawToAmps(HAL_ADCEx_InjectedGetValue(&hadc1, ADC_INJECTED_RANK_1), this->myADC_Offset[0]);
+		this->myADC_Values[1] = rawToAmps(HAL_ADCEx_InjectedGetValue(&hadc1, ADC_INJECTED_RANK_2), this->myADC_Offset[1]);
+		this->myADC_Values[2] = rawToAmps(HAL_ADCEx_InjectedGetValue(&hadc1, ADC_INJECTED_RANK_3), this->myADC_Offset[2]);
+		this->myADC_Values[3] = rawToAmps(HAL_ADCEx_InjectedGetValue(&hadc1, ADC_INJECTED_RANK_4), this->myADC_Offset[3]);
+	}
+	else if(this->myAxis->my_instance == 1)
+	{
+		this->myADC_Values[0] = rawToAmps(HAL_ADCEx_InjectedGetValue(&hadc4, ADC_INJECTED_RANK_1), this->myADC_Offset[0]);
+		this->myADC_Values[1] = rawToAmps(HAL_ADCEx_InjectedGetValue(&hadc4, ADC_INJECTED_RANK_2), this->myADC_Offset[1]);
+		this->myADC_Values[2] = rawToAmps(HAL_ADCEx_InjectedGetValue(&hadc4, ADC_INJECTED_RANK_3), this->myADC_Offset[2]);
+		this->myADC_Values[3] = rawToAmps(HAL_ADCEx_InjectedGetValue(&hadc4, ADC_INJECTED_RANK_4), this->myADC_Offset[3]);
+	}
+	else 
+	{
+		//TODO error here
+	}
+    
+	return;
 }
 
 

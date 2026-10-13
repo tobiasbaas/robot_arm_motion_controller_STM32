@@ -7,6 +7,7 @@
  *
  *  VER: 00.01.00 // Erste Version Jan. 2025
 *****************************************************************************/
+#include "adc.h"
 #include "typedefs.h"
 #include "axis.h"
 #include "trajectory.h"
@@ -17,6 +18,8 @@
 #define _CURRENT_CONTROL_H
 
 extern ADC_HandleTypeDef hadc1;
+extern ADC_HandleTypeDef hadc4;
+
 
 // --- Messkette ---
 namespace current_sens
