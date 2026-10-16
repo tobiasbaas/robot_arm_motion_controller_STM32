@@ -30,9 +30,6 @@ class current_control_class;
 
 class axis_class
 {
-    private:
-        /* data */
-
     public:
         axis_class();
         bool init(uint8_t i,error_class* myError,trajectory_class* trajectory, pos_sensor_class* pos_sensor, PID_class* pid_pos, current_control_class* current_control, data_recorder_class* DR, parameter_class* myParameter);
@@ -44,9 +41,6 @@ class axis_class
         void disable(void);
         bool stop_axis(void);
 
-        //{
-        //	parameter_class::setParameter(cmd,this->myTrajectory->module_parameter_ptr );
-        //};
 
         uint8_t 					my_instance;
         parameter_class*			myParameter;
@@ -67,9 +61,13 @@ class axis_class
 
         //float position;
         //float velocity;
-        uint32_t servoload;				// Servo load in % --> ok until 70%
+        uint32_t servoload;				    // Servo load in % --> ok until 70%
         //float pos_travel_limit;			// positive travel limit
         //float neg_travel_limit;			// negative travel limit
+
+    private:
+        /* data */
+
 };
 
 #endif

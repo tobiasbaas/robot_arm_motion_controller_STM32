@@ -74,9 +74,9 @@ int32_t joint1_old = 0;
 int32_t joint2_old = 0;
 
 // TODO conVal needed??? -> delete??
-volatile float convVal1 = 0; 
-volatile float convVal2 = 0;
-volatile float convVal3 = 0;
+//volatile float convVal1 = 0; 
+//volatile float convVal2 = 0;
+//volatile float convVal3 = 0;
 
 // Global class pointer for timer interrupt handler
 axis_class*             myAxis_ptr[MAX_NUM_AXIS];
@@ -195,12 +195,34 @@ int main(void)
    // Initialization of axis modules
    for(uint8_t i=0;i<MAX_NUM_AXIS;i++)
    {
- 	  pid_pos[i].init(&myAxis[i],&myParameter,&myError);
- 	  trajectory[i].init(&myAxis[i],&myParameter,&myError);
- 	  pos_sensor[i].init(&myAxis[i],&myParameter,&myError);
- 	  //current_control[i].init(&myAxis[i],&myParameter,&myError, &myPWM[i],&trajectory[i]);
- 	  // pointer to classes belonging to an Axis:
- 	  myAxis[i].init(i,&myError,&trajectory[i],&pos_sensor[i],&pid_pos[i],&current_control[i],&myDR,&myParameter);
+ 	  pid_pos[i].init(
+        &myAxis[i],
+        &myParameter,
+        &myError
+    );
+
+ 	  trajectory[i].init(
+        &myAxis[i],
+        &myParameter,
+        &myError
+    );
+
+ 	  pos_sensor[i].init(
+        &myAxis[i],
+        &myParameter,
+        &myError
+    );
+
+ 	  myAxis[i].init(
+        i,
+        &myError,
+        &trajectory[i],
+        &pos_sensor[i],
+        &pid_pos[i],
+        &current_control[i],
+        &myDR,
+        &myParameter
+    );
 
     // Re-initialize current control with the known Axis
     current_control[i].init(
@@ -254,7 +276,6 @@ int main(void)
   } 
   
   HAL_TIM_Base_Start_IT(&htim3); // Start Servo-Loop
-
   /* USER CODE END 2 */
 
   /* Init scheduler */
@@ -272,7 +293,12 @@ int main(void)
   /* USER CODE BEGIN WHILE */
 
   while(1){
-    
+    /*
+    	Sage mir, Muse, die Taten des vielgewanderten Mannes,
+      Welcher so weit geirrt, nach der heiligen Troja Zerstörung,
+      Vieler Menschen Städte gesehn, und Sitte gelernt hat,
+      Und auf dem Meere so viel' unnennbare Leiden erduldet ...
+    */
 	}
 
   /* NOTE : This function should not be modified, when the callback is needed,
@@ -330,15 +356,9 @@ void SystemClock_Config(void)
 }
 
 /* USER CODE BEGIN 4 */
-
-/**
-  * @brief  Period elapsed callback in non-blocking mode
-  * @param  htim TIM handle
-  * @retval None
-  */
 void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 {
-  // TODO needed???
+  // TODO used? -> remove?
 	if (htim->Instance == TIM7) 
   {
 	  HAL_IncTick();
@@ -369,24 +389,14 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 			{
 				myAxis_ptr[axis_to_run]->myTrajectory->setpoint = OD_PERSIST_COMM.x6001_joint1 * JOINT0_SP_SCALE; // Skalierung je Board (typedefs.h)
 				joint1_old = OD_PERSIST_COMM.x6001_joint1;
-			}
-
-      #if AXIS1_ENABLED
-			if(axis_to_run == 1 && (joint2_old != OD_PERSIST_COMM.x6002_joint2))
+			} 
+      else if(axis_to_run == 1 && (joint2_old != OD_PERSIST_COMM.x6002_joint2))
 			{
 				myAxis_ptr[axis_to_run]->myTrajectory->setpoint = OD_PERSIST_COMM.x6002_joint2 * JOINT1_SP_SCALE; // Skalierung je Platine (typedefs.h)
 				joint2_old = OD_PERSIST_COMM.x6002_joint2;
 			}
-      #endif
 
 			myAxis_ptr[axis_to_run]->run();
-
-			// calculate servoload if TIM4 is initialized and constant is valid
-			#ifdef TIMER_COUTER_MAX
-        if (TIMER_COUTER_MAX > 0) {
-          myAxis_ptr[axis_to_run]->servoload = (TIM4->CNT * 100) / TIMER_COUTER_MAX;
-        }
-			#endif
 		}
 
 		// run data recorder if pointer is valid
@@ -394,10 +404,6 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 			myDR_ptr->run();
 		}
 	}
-
-  /* NOTE : This function should not be modified, when the callback is needed,
-            the HAL_TIM_PeriodElapsedCallback could be implemented in the user file
-   */
 }
 /* USER CODE END 4 */
 

@@ -175,3 +175,10 @@ void set_pwm_class::run(float sin, float cos)
 		}
 	}
 }
+
+set_phase_voltage()
+{
+	//set_pwm_duty()
+}
+
+// set_pwm_duty()

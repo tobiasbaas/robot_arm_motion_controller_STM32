@@ -88,7 +88,6 @@ void axis_class::disable(void)
 	this->myPid_Pos->servo_on = false;					// set servo off
 }
 
-
 bool axis_class::run(void)
 {
 	bool ret = true;

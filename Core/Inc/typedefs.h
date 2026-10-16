@@ -149,6 +149,9 @@ extern const float PHASEFACTORB[3];
 	#define RPDO2_COB_ID		0x80000000              // PDO2 ungueltig (Platine 3 hat nur RPDO1)
 #endif
 
+// Definition Voltages
+#define BOARD_VCC 24.0	// supply voltage in [V]
+
 // Definition servo time
 #define	SERVO_FRQ 			10000.0		                // Servo Frequenz
 #define	SERVO_AXIS_FRQ 		SERVO_FRQ /	MAX_NUM_AXIS	// Servo Frequenz
@@ -176,14 +179,14 @@ extern const float PHASEFACTORB[3];
 #define	INT_16_MAX	0x7FFF
 #define	INT_16_MIN	0x8000
 
-
+/*
 #define Enable_CH1_L6230_Pin 		GPIO_PIN_10
 #define Enable_CH1_L6230_GPIO_Port 	GPIOC
 #define Enable_CH2_L6230_Pin 		GPIO_PIN_11
 #define Enable_CH2_L6230_GPIO_Port 	GPIOC
 #define Enable_CH3_L6230_Pin 		GPIO_PIN_12
 #define Enable_CH3_L6230_GPIO_Port 	GPIOC
-
+*/
 
 /*****************************************************
 * DEFINITIONS FOR DEFAULT VALUES IN FIRMAWARE
