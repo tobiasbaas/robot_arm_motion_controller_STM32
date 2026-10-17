@@ -1,39 +1,38 @@
-/***************************************************************************
- *  PWM-Class
- *************************************************************************** 
- * 
- *  Copyright 2025 Tobias Baas
- *  tobias.baas@h-ka.de
- *
- *  VER: 00.01.00 // Erste Version Jan. 2025
-*****************************************************************************/
+/*
+    Used motor driver: DRV8412
+*/
 
-#ifndef _SET_PWM_H
-#define _SET_PWM_H
+#pragma once
+#include "main.h"
 
-#include "trajectory.h"
-
-
-class trajectory_class;
+extern TIM_HandleTypeDef htim1;
+extern TIM_HandleTypeDef htim20;
 
 class set_pwm_class{
-	private:
-		/* data */
-		char mDriver;
-		int32_t isin_a = 0;
-		int32_t isin_b = 0;
-		int32_t icos_a = 0;
-		int32_t icos_b = 0;
-		float phase_factor_a = 0.0;
-		float phase_factor_b = 0.0;
 	public:
-		trajectory_class* 			myTrajectory;
+        set_pwm_class();
+	
+		void init(bool instance);
+        void startPWM(void);
+        // void stopPWM(void);
+        void setDriverMode(void);   // (DRV8412)
+		void enableDriver(void);    // to enable motor driver (DRV8412)
+		void disableDriver(void);   // to disable motor driver (DRV8412)
+		
+        bool setPhaseVoltage(uint8_t phase, float voltage); // set voltage for given phase
+        bool isPhaseCurrentNegative(bool phase, bool &phaseSign);   // phaseSign false -> sign is '+'; pahseSign true -> sign is '-' 
 
-		set_pwm_class();
+        
+    private:
+        bool myInstance; // which axis instance is controlled
 
-		void init(int index, trajectory_class* trajectory);
-		void start(); // to enable drivers
-		void stop(); // to disable drivers
-		void run(float sin, float cos); // to set new values (cyclic)
+        TIM_HandleTypeDef* my_htim; // timer used for PWM
+
+        float myMaxVoltage;   // max. voltage in [V]
+
+        bool driverEnabled;
+        bool myPhase1_isNegative;
+        bool myPhase2_isNegative;
+        // aktuelle Phasen Spannung
+        // aktuelle Stromrichtung
 };
-#endif

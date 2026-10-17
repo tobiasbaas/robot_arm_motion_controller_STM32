@@ -13,6 +13,26 @@
 #include "typedefs.h"
 #include <math.h>
 
+/*****************************************************
+* TREIBER-PHASENFAKTOREN (je Platinenvariante gesetzt)
+* Definieren die im Header typedefs.h nur deklarierten
+* Arrays die/der aktiven Driver (CONTROLLER_1/2/3).
+*******************************************************/
+#ifdef USE_TEST_MOTOR
+const float PHASEFACTORA[3] ={0.2, 1.0, 1.2}; // Testmotor 23SSM8440
+const float PHASEFACTORB[3] ={0.2, 1.0, 1.2}; // Testmotor 23SSM8440
+#else
+	#if defined(CONTROLLER_1)
+	const float PHASEFACTORA[3] ={0.2, 1.0, 1.5}; // M1
+	const float PHASEFACTORB[3] ={0.8, 1.0, 1.5}; // M2
+	#elif defined(CONTROLLER_2)
+	const float PHASEFACTORA[3] ={1.0, 1.0, 1.5}; // M3
+	const float PHASEFACTORB[3] ={1.0, 1.0, 1.5}; // M4
+	#elif defined(CONTROLLER_3)
+	const float PHASEFACTORA[3] ={0.2, 1.0, 1.5}; // Original M5
+	const float PHASEFACTORB[3] ={0.5, 0.8, 1.0}; // default
+	#endif
+#endif
 
 current_control_class::current_control_class()
 {
@@ -25,8 +45,8 @@ void current_control_class::init(axis_class* Axis_ptr, parameter_class* myParame
 	this->myAxis 			= Axis_ptr;
 	this->myPWM				= myPWM_ptr;
 
-	this->myPWM->init(myAxis->my_instance, trajectory);
-	this->myPWM->start();
+	this->myPWM->init(myAxis->my_instance);
+	this->myPWM->startPWM();
 
 	this->myADC_Values[0] = 0;
 	this->myADC_Values[1] = 0;
@@ -78,18 +98,34 @@ bool current_control_class::run(void)
 {
 	readADC();
 
+	float u_sin;	// setting voltage
+	float u_cos;	// setting voltage
+
 	float angle = 0;
 	if (myAxis->my_instance == 0)
-		{
-			angle = mAngle * AXA_MOTORSTEP_COUNT / 4; // umrechnen von mech. Winkel zu elekt. Winkel
-		}
-		else
-		{
-			angle = mAngle * AXB_MOTORSTEP_COUNT / 4;
-		}
+	{
+		angle = mAngle * AXA_MOTORSTEP_COUNT / 4; // umrechnen von mech. Winkel zu elekt. Winkel
+		float phase_factor_a = PHASEFACTORA[this->myAxis->myTrajectory->move_phase];
+		
+		u_sin = phase_factor_a*sinf(angle)*AXA_MAX_V;	// calc voltage
+		u_cos = phase_factor_a*cosf(angle)*AXA_MAX_V;	// calc voltage
+	}
+	else if(myAxis->my_instance == 1)
+	{
+		angle = mAngle * AXB_MOTORSTEP_COUNT / 4;
+		float phase_factor_b = PHASEFACTORB[this->myAxis->myTrajectory->move_phase];
 
+		u_sin = phase_factor_b*sinf(angle)*AXB_MAX_V;
+		u_cos = phase_factor_b*cosf(angle)*AXB_MAX_V;
+	}
+	else 
+	{
+		// TODO Error here
+	}
 
-	this->myPWM->run(sinf(angle), cosf(angle));
+	this->myPWM->setPhaseVoltage(0, u_sin);
+	this->myPWM->setPhaseVoltage(1, u_cos);
+
 	return 0;
 }
 
@@ -183,6 +219,7 @@ float current_control_class::rawToAmps(uint16_t raw, uint16_t offset)
 
 void current_control_class::setCurrentToZero()
 {
-	this->myPWM->run(0, 0); // PWM auf LOW
+	this->myPWM->setPhaseVoltage(0, 0); // PWM auf LOW
+	this->myPWM->setPhaseVoltage(1, 0);
 	return;
 }

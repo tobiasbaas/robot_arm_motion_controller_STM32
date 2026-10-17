@@ -1,184 +1,196 @@
-/***************************************************************************
- *  PWM-Class
- *************************************************************************** 
- * 
- *  Copyright 2025 Tobias Baas
- *  tobias.baas@h-ka.de
- *
- *  VER: 00.01.00 // Erste Version Jan. 2025
-*****************************************************************************/
-
 #include "set_pwm.h"
 #include "typedefs.h"
-#include "main.h"
-#include "trajectory.h"
-
-/*****************************************************
-* TREIBER-PHASENFAKTOREN (je Platinenvariante gesetzt)
-* Definieren die im Header typedefs.h nur deklarierten
-* Arrays die/der aktiven Driver (CONTROLLER_1/2/3).
-*******************************************************/
-#ifdef USE_TEST_MOTOR
-const float PHASEFACTORA[3] ={0.2, 1.0, 1.2}; // Testmotor 23SSM8440
-const float PHASEFACTORB[3] ={0.2, 1.0, 1.2}; // Testmotor 23SSM8440
-#else
-	#if defined(CONTROLLER_1)
-	const float PHASEFACTORA[3] ={0.2, 1.0, 1.5}; // M1
-	const float PHASEFACTORB[3] ={0.8, 1.0, 1.5}; // M2
-	#elif defined(CONTROLLER_2)
-	const float PHASEFACTORA[3] ={1.0, 1.0, 1.5}; // M3
-	const float PHASEFACTORB[3] ={1.0, 1.0, 1.5}; // M4
-	#elif defined(CONTROLLER_3)
-	const float PHASEFACTORA[3] ={0.2, 1.0, 1.5}; // Original M5
-	const float PHASEFACTORB[3] ={0.5, 0.8, 1.0}; // default
-	#endif
-#endif
+//#include <cstdint>
+#include <cmath>
 
 set_pwm_class::set_pwm_class()
 {
+    // default values
+    myInstance = 0;
+    my_htim = &htim1;
+    myMaxVoltage = 0;
+    driverEnabled = false;
+    myPhase1_isNegative = false;
+    myPhase2_isNegative = false;
 }
 
-void set_pwm_class::init(int index, trajectory_class* trajectory)
+void set_pwm_class::init(bool instance)
 {
-	this->myTrajectory = trajectory;
+    myInstance = instance;
 
-	TIM_HandleTypeDef* htim;
+    if(instance == 0)
+    {
+        my_htim = &htim1; // use TIM1 -> axis 1 or "A"
+        myMaxVoltage = AXA_MAX_V;
+    }
+    else if(instance == 1)
+    {
+        my_htim = &htim20;  // use TIM20 -> axis 2 or "B"
+        myMaxVoltage = AXB_MAX_V;
+    }
+    else
+    {
+        // TODO Error here
+    }
 
-	if (index == 0)  // Driver A -> TIM1
+    startPWM();
+    setDriverMode();
+    enableDriver();
+
+    return;
+}
+
+void set_pwm_class::startPWM(void)
+{
+    HAL_TIM_PWM_Start(my_htim, TIM_CHANNEL_1); // half bridge A
+    HAL_TIM_PWM_Start(my_htim, TIM_CHANNEL_2); // half bridge B
+    HAL_TIM_PWM_Start(my_htim, TIM_CHANNEL_3); // half bridge C
+    HAL_TIM_PWM_Start(my_htim, TIM_CHANNEL_4); // half bridge D
+    HAL_TIM_PWM_Start(my_htim, TIM_CHANNEL_5); // internal trigger channel for the injected ADC	
+
+    return;
+}
+
+void set_pwm_class::setDriverMode(void)
+{
+    /*
+        In contrast to the operating modes specified in the datasheet, 
+        the pins are currently set to HIGH, 
+        resulting in the undefined operating mode 1 - 1 - 1.
+
+        TODO: check whether this is intended and, if necessary, change them to LOW.
+    */
+
+    if(myInstance == 0)
+    {
+        // Axis 1/A:
+        HAL_GPIO_WritePin(MOT_A_M1_GPIO_Port, MOT_A_M1_Pin, GPIO_PIN_SET); 	
+		HAL_GPIO_WritePin(MOT_A_M2_GPIO_Port, MOT_A_M2_Pin, GPIO_PIN_SET);	
+		HAL_GPIO_WritePin(MOT_A_M3_GPIO_Port, MOT_A_M3_Pin, GPIO_PIN_SET);	
+    }
+    else if(myInstance == 1)
+    {
+        // Axis 2/B:
+        HAL_GPIO_WritePin(MOT_B_M1_GPIO_Port, MOT_B_M1_Pin, GPIO_PIN_SET);	
+		HAL_GPIO_WritePin(MOT_B_M2_GPIO_Port, MOT_B_M2_Pin, GPIO_PIN_SET);	
+		HAL_GPIO_WritePin(MOT_B_M3_GPIO_Port, MOT_B_M3_Pin, GPIO_PIN_SET);
+    }
+
+    return;
+}
+
+void set_pwm_class::enableDriver(void)
+{
+    if(myInstance == 0) // Driver 1/A
 	{
-		mDriver = 'A';
-		htim = &htim1;
-		HAL_GPIO_WritePin(MOT_A_M1_GPIO_Port, MOT_A_M1_Pin, GPIO_PIN_SET); 	// TODO: Fehler? Müssten die Pins nicht eher auf Low gesetzt werden?
-		HAL_GPIO_WritePin(MOT_A_M2_GPIO_Port, MOT_A_M2_Pin, GPIO_PIN_SET);	// TODO: Fehler? Müssten die Pins nicht eher auf Low gesetzt werden?
-		HAL_GPIO_WritePin(MOT_A_M3_GPIO_Port, MOT_A_M3_Pin, GPIO_PIN_SET);	// TODO: Fehler? Müssten die Pins nicht eher auf Low gesetzt werden?
-		
-		HAL_TIM_PWM_Start(htim, TIM_CHANNEL_1);
-		HAL_TIM_PWM_Start(htim, TIM_CHANNEL_2);
-		HAL_TIM_PWM_Start(htim, TIM_CHANNEL_3);
-		HAL_TIM_PWM_Start(htim, TIM_CHANNEL_4);
-		HAL_TIM_PWM_Start(htim, TIM_CHANNEL_5);  // interner Trigger-Kanal für den ADC	
+		HAL_GPIO_WritePin(GPIOC, GPIO_PIN_13, GPIO_PIN_SET);    // reset pin HIGH -> motordriver activ/ both H-bridges active
 	}
-	else if (index == 1)  // Driver B -> TIM20
+	else if(myInstance == 1) // Driver 2/B
 	{
-		mDriver = 'B';
-		htim = &htim20;
-		HAL_GPIO_WritePin(MOT_B_M1_GPIO_Port, MOT_B_M1_Pin, GPIO_PIN_SET);	// TODO: Fehler? Müssten die Pins nicht eher auf Low gesetzt werden?
-		HAL_GPIO_WritePin(MOT_B_M2_GPIO_Port, MOT_B_M2_Pin, GPIO_PIN_SET);	// TODO: Fehler? Müssten die Pins nicht eher auf Low gesetzt werden?
-		HAL_GPIO_WritePin(MOT_B_M3_GPIO_Port, MOT_B_M3_Pin, GPIO_PIN_SET);	// TODO: Fehler? Müssten die Pins nicht eher auf Low gesetzt werden?
-
-		HAL_TIM_PWM_Start(htim, TIM_CHANNEL_1);
-		HAL_TIM_PWM_Start(htim, TIM_CHANNEL_2);
-		HAL_TIM_PWM_Start(htim, TIM_CHANNEL_3);
-		HAL_TIM_PWM_Start(htim, TIM_CHANNEL_4);
-		HAL_TIM_PWM_Start(htim, TIM_CHANNEL_5);  // interner Trigger-Kanal für den ADC	
-
+		HAL_GPIO_WritePin(GPIOC, GPIO_PIN_9, GPIO_PIN_SET); // reset pin HIGH -> motordriver activ/ both H-bridges active
 	}
 	else
 	{
 		// TODO Error here
+        return;
 	}
+
+    driverEnabled = true;
+
+    return;
 }
 
-void set_pwm_class::start()
+void set_pwm_class::disableDriver(void)
 {
-	if(mDriver == 'A') // Driver A
+    if(myInstance == 0) // Driver 1/A
 	{
-		HAL_GPIO_WritePin(GPIOC, GPIO_PIN_13, GPIO_PIN_SET);  // Reset HIGH, Treiber aktiv
+		HAL_GPIO_WritePin(GPIOC, GPIO_PIN_13, GPIO_PIN_RESET);    // reset pin LOW -> reset both H-bridges 
 	}
-	else if(mDriver == 'B') // Driver B
+	else if(myInstance == 1) // Driver 2/B
 	{
-		HAL_GPIO_WritePin(GPIOC, GPIO_PIN_9, GPIO_PIN_SET);
+		HAL_GPIO_WritePin(GPIOC, GPIO_PIN_9, GPIO_PIN_RESET); // reset pin LOW -> reset both H-bridges 
 	}
 	else
 	{
 		// TODO Error here
+        return;
 	}
+
+    driverEnabled = false;
+
+
+    return;
 }
 
-void set_pwm_class::stop()
+bool set_pwm_class::setPhaseVoltage(uint8_t phase, float voltage)
 {
-	if(mDriver == 'A') // Driver A
-	{
-		HAL_GPIO_WritePin(GPIOC, GPIO_PIN_13, GPIO_PIN_RESET);
-	}
-	else if(mDriver == 'B') // Driver B
-	{
-		HAL_GPIO_WritePin(GPIOC, GPIO_PIN_9, GPIO_PIN_RESET);
-	}
-	else
-	{
-		// TODO Error here
-	}
+    float pwmMax = (float)__HAL_TIM_GET_AUTORELOAD(my_htim);   // e.g. 17000 for 5 kHz
+
+    bool isNegative = (voltage < 0.0f);   // get sign
+    voltage = fabsf(voltage); // remove sign
+
+    if(voltage > myMaxVoltage) voltage = myMaxVoltage;  // clamp voltage for voltage limitation
+
+    int32_t duty = (int32_t)((voltage / BOARD_VCC) * pwmMax);  // calc duty cycle for pwm
+
+    // TODO Grenze für PWM, Siehe Datenblatt etc.; duty muss < Arr sein
+    pwmMax -= 100;
+    if(duty > pwmMax) duty = pwmMax;
+
+    if(phase == 0)  // half-bridge A and B
+    {
+        if(!isNegative) // A -> B
+        {
+            __HAL_TIM_SET_COMPARE(my_htim, TIM_CHANNEL_2, 0);
+            __HAL_TIM_SET_COMPARE(my_htim, TIM_CHANNEL_1, duty);  
+        }
+        else if(isNegative) // B -> A
+        {
+            __HAL_TIM_SET_COMPARE(my_htim, TIM_CHANNEL_1, 0);  
+			__HAL_TIM_SET_COMPARE(my_htim, TIM_CHANNEL_2, duty);
+        }
+
+        myPhase1_isNegative = isNegative;   // save sign; used for current measurement
+    }
+    else if(phase == 1) // half-bridge C and D
+    {
+        if(!isNegative) // C -> D
+        {
+			__HAL_TIM_SET_COMPARE(my_htim, TIM_CHANNEL_4, 0);
+            __HAL_TIM_SET_COMPARE(my_htim, TIM_CHANNEL_3, duty); 
+        }
+        else if(isNegative) // D -> C
+        {
+            __HAL_TIM_SET_COMPARE(my_htim, TIM_CHANNEL_3, 0);  
+			__HAL_TIM_SET_COMPARE(my_htim, TIM_CHANNEL_4, duty);
+        }
+
+        myPhase2_isNegative = isNegative;   // save sign; used for current measurement
+    }
+    else 
+    {
+        // TODO Error here
+        return false;
+    }
+
+    return true;
 }
 
-void set_pwm_class::run(float sin, float cos)
+bool set_pwm_class::isPhaseCurrentNegative(bool phase, bool &phaseSign)
 {
-	if(mDriver == 'A')
-	{
-		const float pwm_scale = (float)__HAL_TIM_GET_AUTORELOAD(&htim1);   // 17000 bei 5 kHz
+    if(phase == 0) // half-bridge A and B
+    {
+        phaseSign = myPhase1_isNegative;
+    }
+    else if(phase == 1) // half-bridge C and D
+    {
+        phaseSign = myPhase2_isNegative;
+    }
+    else
+    {
+        // TODO Error here
+        return false;
+    }
 
-		this->phase_factor_a = PHASEFACTORA[this->myTrajectory->move_phase];
-
-		this->isin_a = (int32_t) (this->phase_factor_a*(AXA_MAX_V/24.0)*pwm_scale*sin);
-		this->icos_a = (int32_t) (this->phase_factor_a*(AXA_MAX_V/24.0)*pwm_scale*cos);
-
-		if(isin_a >= 0)
-		{
-			__HAL_TIM_SET_COMPARE(&htim1, TIM_CHANNEL_1, this->isin_a);  // Duty zwischen 0 und pwm_scale setzen
-			__HAL_TIM_SET_COMPARE(&htim1, TIM_CHANNEL_2, 0);
-		}
-		else
-		{
-			__HAL_TIM_SET_COMPARE(&htim1, TIM_CHANNEL_1, 0);
-			__HAL_TIM_SET_COMPARE(&htim1, TIM_CHANNEL_2, -1*this->isin_a);
-		}
-		
-		if(icos_a >= 0){
-			__HAL_TIM_SET_COMPARE(&htim1, TIM_CHANNEL_3, this->icos_a);
-			__HAL_TIM_SET_COMPARE(&htim1, TIM_CHANNEL_4, 0);
-		}
-		else
-		{
-			__HAL_TIM_SET_COMPARE(&htim1, TIM_CHANNEL_3, 0);
-			__HAL_TIM_SET_COMPARE(&htim1, TIM_CHANNEL_4, -1*this->icos_a);
-		}
-
-	}
-	// Driver B
-	else if(mDriver == 'B')
-	{
-		const float pwm_scale = (float)__HAL_TIM_GET_AUTORELOAD(&htim20);   // 17000 bei 5 kHz
-
-		this->phase_factor_b = PHASEFACTORB[this->myTrajectory->move_phase];
-
-		this->isin_b = (int32_t) (this->phase_factor_b*(AXB_MAX_V/24.0)*pwm_scale*sin);
-		this->icos_b = (int32_t) (this->phase_factor_b*(AXB_MAX_V/24.0)*pwm_scale*cos);
-
-		if(isin_b >= 0)
-		{
-			__HAL_TIM_SET_COMPARE(&htim20, TIM_CHANNEL_1, this->isin_b);
-			__HAL_TIM_SET_COMPARE(&htim20, TIM_CHANNEL_2, 0);
-		}
-		else
-		{
-			__HAL_TIM_SET_COMPARE(&htim20, TIM_CHANNEL_1, 0);
-			__HAL_TIM_SET_COMPARE(&htim20, TIM_CHANNEL_2, -1*this->isin_b);
-		}
-		if(icos_b >= 0){
-			__HAL_TIM_SET_COMPARE(&htim20, TIM_CHANNEL_3, this->icos_b);
-			__HAL_TIM_SET_COMPARE(&htim20, TIM_CHANNEL_4, 0);
-		}
-		else
-		{
-			__HAL_TIM_SET_COMPARE(&htim20, TIM_CHANNEL_3, 0);
-			__HAL_TIM_SET_COMPARE(&htim20, TIM_CHANNEL_4, -1*this->icos_b);
-		}
-	}
+    return true;
 }
-
-set_phase_voltage()
-{
-	//set_pwm_duty()
-}
-
-// set_pwm_duty()
