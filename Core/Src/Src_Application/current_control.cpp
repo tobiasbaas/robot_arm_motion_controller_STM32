@@ -129,8 +129,6 @@ bool current_control_class::run(void)
 	return 0;
 }
 
-// ADC init() // Offset messen etc, Injected ADCs einstellen, dann im DR auslesen, ADC kalibireren
-
 // ADC auslesen; Richtung ermitteln anhand der gesetzten PWM
 void current_control_class::readADC(void)
 {
@@ -155,7 +153,6 @@ void current_control_class::readADC(void)
     
 	return;
 }
-
 
 // Ermittelt die ADC-Werte bei 0 A für alle 4 Kanäle (Rank 1..4).
 // Rückgabe true = ok, offset_out[] ist gültig. Bei false bleibt offset_out unverändert.
@@ -215,7 +212,6 @@ float current_control_class::rawToAmps(uint16_t raw, uint16_t offset)
 {
     return ((int32_t)raw - (int32_t)offset) * current_sens::AMPS_PER_COUNT;
 }
-
 
 void current_control_class::setCurrentToZero()
 {

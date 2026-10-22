@@ -5,6 +5,10 @@
 #pragma once
 #include "main.h"
 
+namespace pwm_const{
+    constexpr int32_t DUTY_LIMIT = 100; // subtracted from the maximum value (ARR) of the PWM to get a maximum duty of < 1
+};
+
 extern TIM_HandleTypeDef htim1;
 extern TIM_HandleTypeDef htim20;
 
@@ -21,7 +25,9 @@ class set_pwm_class{
 		
         bool setPhaseVoltage(uint8_t phase, float voltage); // set voltage for given phase
         bool isPhaseCurrentNegative(bool phase, bool &phaseSign);   // phaseSign false -> sign is '+'; pahseSign true -> sign is '-' 
+        float getVoltageLimit() const;
 
+        bool isDriverEnabled();
         
     private:
         bool myInstance; // which axis instance is controlled

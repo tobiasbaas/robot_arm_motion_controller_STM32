@@ -133,8 +133,8 @@ bool set_pwm_class::setPhaseVoltage(uint8_t phase, float voltage)
 
     int32_t duty = (int32_t)((voltage / BOARD_VCC) * pwmMax);  // calc duty cycle for pwm
 
-    // TODO Grenze für PWM, Siehe Datenblatt etc.; duty muss < Arr sein
-    pwmMax -= 100;
+    // TODO Grenze für PWM, Siehe Datenblatt wegen Bootstrapkondensator etc.; duty muss < Arr sein
+    pwmMax -= pwm_const::DUTY_LIMIT;
     if(duty > pwmMax) duty = pwmMax;
 
     if(phase == 0)  // half-bridge A and B
@@ -193,4 +193,16 @@ bool set_pwm_class::isPhaseCurrentNegative(bool phase, bool &phaseSign)
     }
 
     return true;
+}
+
+float set_pwm_class::getVoltageLimit() const
+{
+    const float arr   = (float)__HAL_TIM_GET_AUTORELOAD(my_htim);
+    const float u_dty = BOARD_VCC * (arr - pwm_const::DUTY_LIMIT) / arr;   // max Voltage at max duty
+    return fminf(myMaxVoltage, u_dty);
+}
+
+bool set_pwm_class::isDriverEnabled()
+{
+    return driverEnabled;
 }
