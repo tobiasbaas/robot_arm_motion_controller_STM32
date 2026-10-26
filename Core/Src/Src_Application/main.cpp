@@ -23,6 +23,7 @@
 #include "dma.h"
 #include "fdcan.h"
 #include "i2c.h"
+#include "stm32g4xx_hal.h"
 #include "usart.h"
 #include "spi.h"
 #include "tim.h"
@@ -264,7 +265,8 @@ int main(void)
   // ADC Offset ermitteln
   for(uint8_t i=0;i<MAX_NUM_AXIS;i++)
   {
-    myAxis_ptr[i]->myCurrent_Control->setCurrentToZero(); // PWM auf LOW
+    myAxis_ptr[i]->myCurrent_Control->setAllCurrentsToZero(); // PWM auf LOW
+    HAL_Delay(20);
     if(i == 0)
     {
       myAxis_ptr[i]->myCurrent_Control->calibrateADC_Offsets(&hadc1);
@@ -274,6 +276,12 @@ int main(void)
       myAxis_ptr[i]->myCurrent_Control->calibrateADC_Offsets(&hadc4);
     }
   } 
+
+  #ifdef USE_FOC
+    // Start current control loop (runs in ADC ISR)
+    HAL_ADCEx_InjectedStop(&hadc1); // axis 1/A
+    HAL_ADCEx_InjectedStart_IT(&hadc4); // axis 2/B
+  #endif
   
   HAL_TIM_Base_Start_IT(&htim3); // Start Servo-Loop
   /* USER CODE END 2 */
@@ -356,6 +364,20 @@ void SystemClock_Config(void)
 }
 
 /* USER CODE BEGIN 4 */
+void HAL_ADCEx_InjectedConvCpltCallback(ADC_HandleTypeDef* hadc)
+{
+  #ifdef USE_FOC
+    if (hadc->Instance == ADC1)
+    {
+      GPIOA->BSRR = GPIO_BSRR_BS4;  // set GPIO PA4 for debug resons
+      myAxis_ptr[0]->myCurrent_Control->currentControlLoop();
+      GPIOA->BSRR = GPIO_BSRR_BR4;  // reset GPIO PA4
+
+    }     
+    else if (hadc->Instance == ADC4) myAxis_ptr[1]->myCurrent_Control->currentControlLoop();
+  #endif
+}
+
 void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 {
   // TODO used? -> remove?

@@ -83,7 +83,7 @@ bool pos_sensor_class::get_position(void)
 // if no position sensor available
 bool pos_sensor_class::get_stepper_position(void)
 {
-	this->position = myAxis->myCurrent_Control->getPosition(); // z. B. in Rad
+	this->position = myAxis->myCurrent_Control->getMechAngle(); // z. B. in Rad
 	this->velocity = (this->position - this->position_1) * SERVO_FRQ;
 	this->velocity_filtered_1 = this->velocity_filtered;
 	this->velocity_filtered = 0.98 *this->velocity_filtered_1 + 0.02 * this->velocity;

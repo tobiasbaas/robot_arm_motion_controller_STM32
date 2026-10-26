@@ -48,7 +48,8 @@ bool PID_class::servo_on_off(bool state)
 	{
 		if(this->myAxis->enabled == true)
 		{
-			// TODO this->myAxis->myCurrent_Control->start_foc_run();
+			this->myAxis->myCurrent_Control->resetFaultLatch();
+			//this->myAxis->myCurrent_Control->start_foc_run();
 			PID_class::servo_on = true;
 			ret = true;
 		}

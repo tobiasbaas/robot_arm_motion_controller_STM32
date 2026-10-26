@@ -33,9 +33,9 @@ void set_pwm_class::init(bool instance)
         // TODO Error here
     }
 
-    startPWM();
+    //startPWM();
     setDriverMode();
-    enableDriver();
+    //enableDriver();
 
     return;
 }
@@ -53,27 +53,21 @@ void set_pwm_class::startPWM(void)
 
 void set_pwm_class::setDriverMode(void)
 {
-    /*
-        In contrast to the operating modes specified in the datasheet, 
-        the pins are currently set to HIGH, 
-        resulting in the undefined operating mode 1 - 1 - 1.
-
-        TODO: check whether this is intended and, if necessary, change them to LOW.
-    */
+    // Mode 001 -> Dual full brige with OC latching shutdown; currently the oc shutdown case is not solved by SW
 
     if(myInstance == 0)
     {
         // Axis 1/A:
         HAL_GPIO_WritePin(MOT_A_M1_GPIO_Port, MOT_A_M1_Pin, GPIO_PIN_SET); 	
-		HAL_GPIO_WritePin(MOT_A_M2_GPIO_Port, MOT_A_M2_Pin, GPIO_PIN_SET);	
-		HAL_GPIO_WritePin(MOT_A_M3_GPIO_Port, MOT_A_M3_Pin, GPIO_PIN_SET);	
+		HAL_GPIO_WritePin(MOT_A_M2_GPIO_Port, MOT_A_M2_Pin, GPIO_PIN_RESET);	
+		HAL_GPIO_WritePin(MOT_A_M3_GPIO_Port, MOT_A_M3_Pin, GPIO_PIN_RESET);	
     }
     else if(myInstance == 1)
     {
         // Axis 2/B:
         HAL_GPIO_WritePin(MOT_B_M1_GPIO_Port, MOT_B_M1_Pin, GPIO_PIN_SET);	
-		HAL_GPIO_WritePin(MOT_B_M2_GPIO_Port, MOT_B_M2_Pin, GPIO_PIN_SET);	
-		HAL_GPIO_WritePin(MOT_B_M3_GPIO_Port, MOT_B_M3_Pin, GPIO_PIN_SET);
+		HAL_GPIO_WritePin(MOT_B_M2_GPIO_Port, MOT_B_M2_Pin, GPIO_PIN_RESET);	
+		HAL_GPIO_WritePin(MOT_B_M3_GPIO_Port, MOT_B_M3_Pin, GPIO_PIN_RESET);
     }
 
     return;
@@ -102,6 +96,12 @@ void set_pwm_class::enableDriver(void)
 
 void set_pwm_class::disableDriver(void)
 {
+    __HAL_TIM_SET_COMPARE(my_htim, TIM_CHANNEL_1, 0);
+    __HAL_TIM_SET_COMPARE(my_htim, TIM_CHANNEL_2, 0);
+    __HAL_TIM_SET_COMPARE(my_htim, TIM_CHANNEL_3, 0);
+    __HAL_TIM_SET_COMPARE(my_htim, TIM_CHANNEL_4, 0);
+
+
     if(myInstance == 0) // Driver 1/A
 	{
 		HAL_GPIO_WritePin(GPIOC, GPIO_PIN_13, GPIO_PIN_RESET);    // reset pin LOW -> reset both H-bridges 
@@ -117,7 +117,6 @@ void set_pwm_class::disableDriver(void)
 	}
 
     driverEnabled = false;
-
 
     return;
 }

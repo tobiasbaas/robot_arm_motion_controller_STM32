@@ -17,6 +17,7 @@
 //#define CONTROLLER_2
 //#define CONTROLLER_3
 
+#define USE_FOC			// use FOC, comment out for open loop
 #define SEND_OVER_USB // Information is sent using `send_string_USB`; comment this out to send using `send_string_DMA`
 
 #define VERSION_STR 		"00.00.002"

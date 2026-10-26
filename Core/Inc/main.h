@@ -100,8 +100,6 @@ void Error_Handler(void);
 #define ADC1_CH3_Cur_A_C_GPIO_Port GPIOA
 #define ADC1_CH4_Cur_A_D_Pin GPIO_PIN_3
 #define ADC1_CH4_Cur_A_D_GPIO_Port GPIOA
-#define SPI3_SS_EXT_NEU_Pin GPIO_PIN_4
-#define SPI3_SS_EXT_NEU_GPIO_Port GPIOA
 #define SPI1_SCK_TW29_A_Pin GPIO_PIN_5
 #define SPI1_SCK_TW29_A_GPIO_Port GPIOA
 #define SPI1_MISO_TW29_A_Pin GPIO_PIN_6

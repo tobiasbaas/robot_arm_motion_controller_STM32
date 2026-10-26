@@ -92,21 +92,31 @@ bool axis_class::run(void)
 {
 	bool ret = true;
 
-	ret = this->myPos->get_stepper_position();
-	ret = this->myTrajectory->calc();
+	#ifdef USE_FOC
+		// FOC 
+		// Setpoints für i_d und i_q berrechnen
+		// Trajectorie berrechnen
+		// Positionsregler
+		// ...
+	#else
+		// open loop
 
-	if(this->enabled == true)
-	{
-		if(this->myPid_Pos->servo_on == true)
+		ret = this->myPos->get_stepper_position();
+		ret = this->myTrajectory->calc();
+
+		if(this->enabled == true)
 		{
-			float pid_output = this->myPid_Pos->PIDrun(this->myPos->position, this->myTrajectory->slowed_target);
+			if(this->myPid_Pos->servo_on == true)
+			{
+				float pid_output = this->myPid_Pos->PIDrun(this->myPos->position, this->myTrajectory->slowed_target);
 
-			float angle_step = (this->myPos->position + 0.02f * pid_output);
+				float angle_step = (this->myPos->position + 0.02f * pid_output);
 
-			this->myCurrent_Control->setAngle(angle_step);
+				this->myCurrent_Control->setMechAngle(angle_step);
+			}
+			this->myCurrent_Control->oldCurrentLoop();
 		}
-		this->myCurrent_Control->run();
-	}
+	#endif
 	
 	return ret;
 }

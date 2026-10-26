@@ -213,13 +213,14 @@ bool data_recorder_class::table_ptr_update(uint16_t id,uint8_t trace)
 		// 			sprintf(&this->table_name[trace][0],"FOC (d) PI Control Out - Axis: %d",axis);
 		// 			break;
 		case 9:		// Motor current
-					this->rec_table_ptr[trace] = &this->myAxis[recInstance]->myCurrent_Control->myADC_Values[0];
-					sprintf(&this->table_name[trace][0],"Current Phase1-ShuntA - Axis: %d",recInstance);
+					this->rec_table_ptr[trace] = &this->myAxis[recInstance]->myCurrent_Control->i_alpha;
+					sprintf(&this->table_name[trace][0],"Current Phase1 - Axis: %d",recInstance);
 					break;
 		case 10:	// Motor current
-					this->rec_table_ptr[trace] = &this->myAxis[recInstance]->myCurrent_Control->myADC_Values[1];
-					sprintf(&this->table_name[trace][0],"Current Phase1-ShuntB - Axis: %d",recInstance);
+					this->rec_table_ptr[trace] = &this->myAxis[recInstance]->myCurrent_Control->i_beta;
+					sprintf(&this->table_name[trace][0],"Current Phase2 - Axis: %d",recInstance);
 					break;
+		/*
 		case 11:		// Motor current
 					this->rec_table_ptr[trace] = &this->myAxis[recInstance]->myCurrent_Control->myADC_Values[2];
 					sprintf(&this->table_name[trace][0],"Current Phase2-ShuntC - Axis: %d",recInstance);
@@ -228,6 +229,7 @@ bool data_recorder_class::table_ptr_update(uint16_t id,uint8_t trace)
 					this->rec_table_ptr[trace] = &this->myAxis[recInstance]->myCurrent_Control->myADC_Values[3];
 					sprintf(&this->table_name[trace][0],"Current Phase2-ShuntD - Axis: %d",recInstance);
 					break;
+		*/
 		// case 9:		// PID out Iq
 		// 			this->rec_table_ptr[trace] = &this->myAxis[axis]->myCurrent_Control->PI[FOC_Q].pid_y;
 		// 			sprintf(&this->table_name[trace][0],"FOC (q) PI Control Out - Axis: %d",axis);

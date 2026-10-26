@@ -981,7 +981,7 @@ bool ComInt_class::servo_on_off(void)
 	}
 	else
 	{
-			ret = this->myAxis[this->myCmd.i_instance]->myPid_Pos->servo_on_off(cmd);
+		ret = this->myAxis[this->myCmd.i_instance]->myPid_Pos->servo_on_off(cmd);
 	}
 	return ret;
 }
