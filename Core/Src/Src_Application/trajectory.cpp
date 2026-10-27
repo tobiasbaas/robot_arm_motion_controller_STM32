@@ -123,7 +123,7 @@ bool trajectory_class::calc(void)
 	//  Bewegungsrichtung - Wegstrecke bis zum Ziel:
 	trajectory_class::s_delta = trajectory_class::setpoint - trajectory_class::slowed_target;
 
-	if(trajectory_class::s_delta == 0.0)
+	if(trajectory_class::s_delta == 0.0f)
 	{
 		trajectory_class::motion_on = false;
 		trajectory_class::ont 		= true;
@@ -142,29 +142,29 @@ bool trajectory_class::calc(void)
 		{
 			dd_s_max_dec_tmp = 1.0e-9f;	// verhindert inf/NaN im Servoloop
 		}
-		trajectory_class::s_br = round(trajectory_class::d_s / dd_s_max_dec_tmp)  * 0.5 * (trajectory_class::d_s);
+		trajectory_class::s_br = roundf(trajectory_class::d_s / dd_s_max_dec_tmp)  * 0.5f * (trajectory_class::d_s);
 
 		// Geschwindigkeitsberechnung
-		if(trajectory_class::s_delta >= 0.0 )						// positive Bewegungsrichtung
+		if(trajectory_class::s_delta >= 0.0f )						// positive Bewegungsrichtung
 		{
 			trajectory_class::move_phase = PHASE_ACCELERATE;
 
-			if(fabs(trajectory_class::s_delta) > fabs(trajectory_class::s_br))		// Beschleunigung
+			if(fabsf(trajectory_class::s_delta) > fabsf(trajectory_class::s_br))		// Beschleunigung
 			{
 				trajectory_class::dd_s = trajectory_class::dd_s_max_acc;
 			}
 			else                            	// Verzögerung
 			{
-				trajectory_class::dd_s = -1.0 * trajectory_class::dd_s_max_dec;
+				trajectory_class::dd_s = -trajectory_class::dd_s_max_dec;
 			}
 		}
 		else                                	// negative Bewegungsrichtung
 		{
 			trajectory_class::move_phase = PHASE_ACCELERATE;
 
-			if(fabs(trajectory_class::s_delta) > fabs(trajectory_class::s_br))     	// Beschleunigung
+			if(fabsf(trajectory_class::s_delta) > fabsf(trajectory_class::s_br))     	// Beschleunigung
 			{
-				trajectory_class::dd_s = -1.0 * trajectory_class::dd_s_max_acc;
+				trajectory_class::dd_s = -trajectory_class::dd_s_max_acc;
 			}
 			else                            	// Verzögerung
 			{
@@ -183,16 +183,16 @@ bool trajectory_class::calc(void)
 			trajectory_class::dd_s = 0.0;
 		}
 
-		if(trajectory_class::d_s < -1.0 * trajectory_class::d_s_max ) 						// konstante Fahrt ohen weitere Beschleunigung (negativ)
+		if(trajectory_class::d_s < -trajectory_class::d_s_max ) 						// konstante Fahrt ohen weitere Beschleunigung (negativ)
 		{
 			trajectory_class::move_phase = PHASE_MOVE;
 
-			trajectory_class::d_s = -1.0 * trajectory_class::d_s_max;
+			trajectory_class::d_s = -trajectory_class::d_s_max;
 			trajectory_class::dd_s = 0.0;
 		}
 
 		// letzte Iteration vor erreichen des Ziels...
-		if(fabs(trajectory_class::s_delta) <= fabs(trajectory_class::d_s))
+		if(fabsf(trajectory_class::s_delta) <= fabsf(trajectory_class::d_s))
 		{
 			trajectory_class::move_phase = PHASE_ACCELERATE; // change to "PHASE_STANDSTILL"?
 

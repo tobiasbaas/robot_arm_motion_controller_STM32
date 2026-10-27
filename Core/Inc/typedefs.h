@@ -74,33 +74,33 @@
 
 	// Driver 1A
 	#define AXA_MOTORSTEP_COUNT	200
-	#define AXA_MAX_V			4.0
+	#define AXA_MAX_V			4.0f
 
 	// Driver 1B
 	#define AXB_MOTORSTEP_COUNT	200
-	#define AXB_MAX_V			4.0
+	#define AXB_MAX_V			4.0f
 
 #elif defined(CONTROLLER_2) // ---------- Board 2 ----------
 	#define CONTROLLER_NAME_STR "LIS-MC-Board2" // Labor Inform. Sys. - Motion Controller
 
 	// Driver 2A
 	#define AXA_MOTORSTEP_COUNT	200
-	#define AXA_MAX_V			4.0
+	#define AXA_MAX_V			4.0f
 
 	// Driver 2B
 	#define AXB_MOTORSTEP_COUNT	200
-	#define AXB_MAX_V			4.0
+	#define AXB_MAX_V			4.0f
 
 #elif defined(CONTROLLER_3) // ---------- Board 3 ----------
 	#define CONTROLLER_NAME_STR "LIS-MC-Board3" // Labor Inform. Sys. - Motion Controller
 
 	// Driver 3A
 	#define AXA_MOTORSTEP_COUNT	200
-	#define AXA_MAX_V			12.0	// Original M5
+	#define AXA_MAX_V			12.0f	// Original M5
 
 	// Driver 3B
 	#define AXB_MOTORSTEP_COUNT	200
-	#define AXB_MAX_V			4.0
+	#define AXB_MAX_V			4.0f
 #endif
 
 /*****************************************************
@@ -112,8 +112,8 @@
 #ifdef USE_TEST_MOTOR
 	#undef  AXA_MAX_V
 	#undef  AXB_MAX_V
-	#define AXA_MAX_V	2.4	// Testmotor: begrenzt Phasenstrom auf ~4 A bei 0,6 Ohm
-	#define AXB_MAX_V	2.4	// Testmotor: begrenzt Phasenstrom auf ~4 A bei 0,6 Ohm
+	#define AXA_MAX_V	2.4f	// Testmotor: begrenzt Phasenstrom auf ~4 A bei 0,6 Ohm
+	#define AXB_MAX_V	2.4f	// Testmotor: begrenzt Phasenstrom auf ~4 A bei 0,6 Ohm
 #endif
 
 /* Die PHASEFACTOR-Arrays pro Platine sind in set_pwm.cpp definiert (dort je
@@ -127,38 +127,38 @@ extern const float PHASEFACTORB[3];
 *******************************************************/
 #if defined(CONTROLLER_1) // ---------- Board 1 ----------
 	#define CANOPEN_NODE_ID		2                       // CANopen Node-ID
-	#define JOINT0_SP_SCALE		(5.0/1000000.0)         // Achse 0: setpoint = OD_x6001 * SCALE (Orig: /1e6 * 5.0)
-	#define JOINT1_SP_SCALE		(-5.0/1000000.0)        // Achse 1: setpoint = OD_x6002 * SCALE (Orig: /1e6 * -5.0)
+	#define JOINT0_SP_SCALE		(5.0f/1000000.0f)         // Achse 0: setpoint = OD_x6001 * SCALE (Orig: /1e6 * 5.0)
+	#define JOINT1_SP_SCALE		(-5.0f/1000000.0f)        // Achse 1: setpoint = OD_x6002 * SCALE (Orig: /1e6 * -5.0)
 	#define AXIS1_ENABLED		1                       // 1 = Achse 1 aktiv, 0 = deaktiviert
 	#define RPDO1_COB_ID		0x00000202              // PDO1 COB-ID (Direktzugriff auf joint1/x6001)
 	#define RPDO2_COB_ID		0x00000203              // PDO2 COB-ID (Direktzugriff auf joint2/x6002)
 
 #elif defined(CONTROLLER_2) // ---------- Board 2 ----------
 	#define CANOPEN_NODE_ID		3
-	#define JOINT0_SP_SCALE		(-5.0/1000000.0)        // Achse 0: setpoint = OD_x6001 * SCALE (Orig: /1e6 * -5.0)
-	#define JOINT1_SP_SCALE		(5.0/1000000.0)         // Achse 1: setpoint = OD_x6002 * SCALE (Orig: /1e6 * 5.0)
+	#define JOINT0_SP_SCALE		(-5.0f/1000000.0f)        // Achse 0: setpoint = OD_x6001 * SCALE (Orig: /1e6 * -5.0)
+	#define JOINT1_SP_SCALE		(5.0f/1000000.0f)         // Achse 1: setpoint = OD_x6002 * SCALE (Orig: /1e6 * 5.0)
 	#define AXIS1_ENABLED		1
 	#define RPDO1_COB_ID		0x00000204              // PDO1 COB-ID
 	#define RPDO2_COB_ID		0x00000205              // PDO2 COB-ID
 
 #elif defined(CONTROLLER_3) // ---------- Board 3 ----------
 	#define CANOPEN_NODE_ID		4
-	#define JOINT0_SP_SCALE		(1.0/300.0)             // Achse 0: setpoint = OD_x6001 * SCALE
-	#define JOINT1_SP_SCALE		(-5.0/1000000.0)        // ungenutzt (AXIS1_ENABLED = 0)
+	#define JOINT0_SP_SCALE		(1.0f/300.0f)             // Achse 0: setpoint = OD_x6001 * SCALE
+	#define JOINT1_SP_SCALE		(-5.0f/1000000.0f)        // ungenutzt (AXIS1_ENABLED = 0)
 	#define AXIS1_ENABLED		0                       // Platine 3 hat keine 2. Achse
 	#define RPDO1_COB_ID		0x00000206              // PDO1 COB-ID
 	#define RPDO2_COB_ID		0x80000000              // PDO2 ungueltig (Platine 3 hat nur RPDO1)
 #endif
 
 // Definition Voltages
-#define BOARD_VCC 24.0	// supply voltage in [V]
+#define BOARD_VCC 24.0f	// supply voltage in [V]
 
 // Definition servo time
-#define	SERVO_FRQ 			10000.0		                // Servo Frequenz
+#define	SERVO_FRQ 			10000.0f		                // Servo Frequenz
 #define	SERVO_AXIS_FRQ 		SERVO_FRQ /	MAX_NUM_AXIS	// Servo Frequenz
 #define	SERVO_AXIS_TIME		MAX_NUM_AXIS / SERVO_FRQ 	// Servo Time
 
-#define	SYSTEM_SERVO_TIME 	0.0001 		// Servo Zyklus Zeit in [??]
+#define	SYSTEM_SERVO_TIME 	0.0001f 		// Servo Zyklus Zeit in [??]
 #define TIMER_COUTER_MAX	160000		// Max counter for timer of servo frq (Timer clock 160 MHz) //TODO Not 170 MHz?
 
 // PI

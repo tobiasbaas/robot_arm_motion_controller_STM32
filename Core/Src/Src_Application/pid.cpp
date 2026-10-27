@@ -138,9 +138,9 @@ float PID_class::PIDrun(float position, float slowed_target)
 		// anti Windup (limit i-term in case of contol out limit reached...)
 		PID_class::pid_y_I -= iTerm_tmp;
 	} // Negative Limit
-	else if (PID_class::pid_y < (-1.0 * PID_class::pid_y_max) )
+	else if (PID_class::pid_y < (-PID_class::pid_y_max) )
 	{
-		PID_class::pid_y = -1 * PID_class::pid_y_max;
+		PID_class::pid_y = -PID_class::pid_y_max;
 		// anti Windup (limit i-term in case of contol out limit reached...)
 		PID_class::pid_y_I -= iTerm_tmp;
 	}

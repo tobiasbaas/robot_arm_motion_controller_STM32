@@ -74,7 +74,7 @@ bool pos_sensor_class::get_position(void)
 	this->position = (float)this->sensor_raw * (float)this->numerator / (float)this->denominator + this->position_offset;
 	this->velocity = (this->position - this->position_1) * SERVO_FRQ;
 	this->velocity_filtered_1 = this->velocity_filtered;
-	this->velocity_filtered = 0.98 *this->velocity_filtered_1 + 0.02 * this->velocity;
+	this->velocity_filtered = 0.98f *this->velocity_filtered_1 + 0.02f * this->velocity;
 	this->position_1 = this->position;
 	
 	return ret;
@@ -86,7 +86,7 @@ bool pos_sensor_class::get_stepper_position(void)
 	this->position = myAxis->myCurrent_Control->getMechAngle(); // z. B. in Rad
 	this->velocity = (this->position - this->position_1) * SERVO_FRQ;
 	this->velocity_filtered_1 = this->velocity_filtered;
-	this->velocity_filtered = 0.98 *this->velocity_filtered_1 + 0.02 * this->velocity;
+	this->velocity_filtered = 0.98f *this->velocity_filtered_1 + 0.02f * this->velocity;
 	this->position_1 = this->position;
 
 	return 0;

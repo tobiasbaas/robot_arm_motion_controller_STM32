@@ -230,11 +230,14 @@ void DMA1_Channel2_IRQHandler(void)
 void ADC1_2_IRQHandler(void)
 {
   /* USER CODE BEGIN ADC1_2_IRQn 0 */
+  //GPIOA->BSRR = GPIO_BSRR_BS9;  // set GPIO PA9 for debug reasons
+  //GPIOA->ODR ^= GPIO_ODR_OD4; // Toggle GPIO PA4 for debug reasons
+
 
   /* USER CODE END ADC1_2_IRQn 0 */
   HAL_ADC_IRQHandler(&hadc1);
   /* USER CODE BEGIN ADC1_2_IRQn 1 */
-
+  
   /* USER CODE END ADC1_2_IRQn 1 */
 }
 

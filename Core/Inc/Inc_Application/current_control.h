@@ -91,10 +91,10 @@ class current_control_class
 		float i_alpha;		// current phase 1/A; [A]
 		float i_beta;		// current phase 2/B; [A]
 
+		set_pwm_class* myPWM;
 
     private:
 		axis_class* myAxis;
-		set_pwm_class* myPWM;
 		error_class* myError;
 		parameter_class* myParameter;
 		trajectory_class* myTrajectory;
@@ -124,4 +124,7 @@ class current_control_class
 		float u_beta;		// voltage phase 2/B; [V]
 
 		uint16_t ADC_Offset[4];	// Offsets der ADC Channels bei 0A, also welcher Rohwert wird bei 0A gelesen; Erwarteter Wert 1861 (für +1,5V Offset bei 12Bit)
+
+		volatile uint32_t dbg_last[6];   // letzter Wert je Abschnitt (in Takten)
+		volatile uint32_t dbg_max[6];    // größter bisher gesehener Wert
 };

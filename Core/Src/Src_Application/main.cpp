@@ -173,7 +173,7 @@ int main(void)
   MX_TIM16_Init();
   MX_USART2_UART_Init();
   MX_TIM1_Init();
-  MX_I2C2_Init();
+  //MX_I2C2_Init();
   MX_TIM6_Init();
   MX_LPUART1_UART_Init();
 
@@ -182,6 +182,11 @@ int main(void)
   #ifndef SEND_OVER_USB
     HAL_UART_Receive_DMA(&hlpuart1, rx_buff, 1); // Start DMA receive
   #endif
+
+  // Stoppuhr; nur für Debug -> löschen
+  //CoreDebug->DEMCR |= CoreDebug_DEMCR_TRCENA_Msk;   // Debug-Block einschalten
+  //DWT->CYCCNT = 0;                                  // Zähler auf 0
+  //DWT->CTRL  |= DWT_CTRL_CYCCNTENA_Msk;             // Zähler starten
 
 
 	myParameter.init_param(&myError);
@@ -245,7 +250,6 @@ int main(void)
   mySystem.init();
   myDR.init();
 
-
   // enable Axis 
   myAxis[0].enabled = true;
   myPID_pos_ptr[0]->servo_on_off(true);
@@ -254,6 +258,20 @@ int main(void)
   myAxis[1].enabled = true;
   myPID_pos_ptr[1]->servo_on_off(true);
   #endif
+
+  
+  
+  // 1. Slave (TIM1, Achse A) vorbereiten: Kanäle freigeben, Zähler läuft noch nicht
+  myCurrent_Control[0]->myPWM->startPWM();
+
+  // 2. Zähler um die halbe Periode vorstellen
+  __HAL_TIM_SET_COUNTER(&htim1, __HAL_TIM_GET_AUTORELOAD(&htim1) - 1);
+
+  // 3. Master (TIM20, Achse B) zuletzt starten, das startet TIM1 gleich mit
+  myCurrent_Control[1]->myPWM->startPWM();
+
+
+
 
   // Start ADC
   HAL_ADCEx_Calibration_Start(&hadc1, ADC_SINGLE_ENDED);
@@ -280,6 +298,9 @@ int main(void)
   #ifdef USE_FOC
     // Start current control loop (runs in ADC ISR)
     HAL_ADCEx_InjectedStop(&hadc1); // axis 1/A
+    HAL_ADCEx_InjectedStart_IT(&hadc1); // axis 2/B
+
+    HAL_ADCEx_InjectedStop(&hadc4); // axis 1/A
     HAL_ADCEx_InjectedStart_IT(&hadc4); // axis 2/B
   #endif
   
@@ -369,12 +390,20 @@ void HAL_ADCEx_InjectedConvCpltCallback(ADC_HandleTypeDef* hadc)
   #ifdef USE_FOC
     if (hadc->Instance == ADC1)
     {
-      GPIOA->BSRR = GPIO_BSRR_BS4;  // set GPIO PA4 for debug resons
+      //GPIOA->ODR ^= GPIO_ODR_OD4; // Toggle GPIO PA4 for debug reasons
+      //GPIOA->BSRR = GPIO_BSRR_BS4;  // set GPIO PA4 for debug reasons
       myAxis_ptr[0]->myCurrent_Control->currentControlLoop();
-      GPIOA->BSRR = GPIO_BSRR_BR4;  // reset GPIO PA4
+      //GPIOA->BSRR = GPIO_BSRR_BR4;  // reset GPIO PA4
 
     }     
-    else if (hadc->Instance == ADC4) myAxis_ptr[1]->myCurrent_Control->currentControlLoop();
+    else if (hadc->Instance == ADC4)
+    {
+      //GPIOA->ODR ^= GPIO_ODR_OD9; // Toggle GPIO PA9 for debug reasons
+      //GPIOA->BSRR = GPIO_BSRR_BS9;  // set GPIO PA9 for debug reasons
+      myAxis_ptr[1]->myCurrent_Control->currentControlLoop();
+      //GPIOA->BSRR = GPIO_BSRR_BR9;  // set GPIO PA9 for debug reasons
+    }
+    
   #endif
 }
 

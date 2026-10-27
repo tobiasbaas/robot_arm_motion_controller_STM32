@@ -16,7 +16,7 @@ void current_control_class::init(axis_class* Axis_ptr, parameter_class* myParame
     this->myTrajectory      = trajectory;
 
    	this->myPWM->init(myAxis->my_instance);
-	this->myPWM->startPWM();
+	//this->myPWM->startPWM();
     this->myPWM->enableDriver();    // TODO move to startFOC
 
     if(myAxis->my_instance == 0) this->myADC = &hadc1;
@@ -174,24 +174,41 @@ float current_control_class::getMechAngle()
 // control loop for FOC and current control
 void current_control_class::currentControlLoop()
 {
+    //const uint32_t t0 = DWT->CYCCNT;
+
     if(faultLatched || !myPWM->isDriverEnabled()) return;  
     readADC();
     if(checkOvercurrent()) return;  // Overcurrent protection
+    //const uint32_t t1 = DWT->CYCCNT;          // Ende: ADC lesen + Überstromprüfung
 
     // Encoder lesen
     // Encoder Winkel umrechnen
 
     parkTransformation(); // Park-Transformation using this->i_alpha and this->i_beta
-    
+    //const uint32_t t2 = DWT->CYCCNT;          // Ende: Park (enthält sinf/cosf)
+
     PIController((this->i_d_set - this->i_d), this->PIController_id); // PI controller for id; uses u_lim as maximum, as id is regulated to 0 and u_d is therefore relatively small
     const float ud = PIController_id.pidOut;
     PIController_iq.pidOut_max = sqrtf(fmaxf(u_lim * u_lim - ud * ud, 0.0f));   // calculates the maximum output for u_d so that the magnitude of the voltage vector does not exceed u_lim
     PIController((this->i_q_set - this->i_q), this->PIController_iq); // PI controller for iq
+    //const uint32_t t3 = DWT->CYCCNT;          // Ende: beide PI-Regler
 
     inverseParkTransformation(this->PIController_id.pidOut, this->PIController_iq.pidOut); // inverse Park-Transformation
+    //const uint32_t t4 = DWT->CYCCNT;          // Ende: inverse Park
 
-    myPWM->setPhaseVoltage(0, this->u_alpha);   // set Phase 1/A
-    myPWM->setPhaseVoltage(1, this->u_beta);   // set Phase 2/B
+    //myPWM->setPhaseVoltage(0, this->u_alpha);   // set Phase 1/A
+    //myPWM->setPhaseVoltage(1, this->u_beta);   // set Phase 2/B
+
+    //const uint32_t t5 = DWT->CYCCNT;          // Ende: beide PWM-Updates
+
+
+    /*
+    const uint32_t d[6] = { t1-t0, t2-t1, t3-t2, t4-t3, t5-t4, t5-t0 };
+    for (int i = 0; i < 6; i++) {
+        dbg_last[i] = d[i];
+        if (d[i] > dbg_max[i]) dbg_max[i] = d[i];
+    }*/
+
 }
 
 // setFOC
@@ -226,7 +243,7 @@ void current_control_class::readADC(void)
         }
         else // current flows form half-bridge B to halfbridge A
         {
-            this->i_alpha = -1.0 * rawToAmps(HAL_ADCEx_InjectedGetValue(myADC, ADC_INJECTED_RANK_1), this->ADC_Offset[0]); // Shunt A; Rank 1
+            this->i_alpha = -rawToAmps(HAL_ADCEx_InjectedGetValue(myADC, ADC_INJECTED_RANK_1), this->ADC_Offset[0]); // Shunt A; Rank 1
         }
 
         // get current for Phase 2/B
@@ -236,7 +253,7 @@ void current_control_class::readADC(void)
         }
         else // current flows form half-bridge D to halfbridge C
         {
-            this->i_beta = -1.0 * rawToAmps(HAL_ADCEx_InjectedGetValue(myADC, ADC_INJECTED_RANK_3), this->ADC_Offset[2]); // Shunt C; Rank 3
+            this->i_beta = -rawToAmps(HAL_ADCEx_InjectedGetValue(myADC, ADC_INJECTED_RANK_3), this->ADC_Offset[2]); // Shunt C; Rank 3
         }
     }
     else 

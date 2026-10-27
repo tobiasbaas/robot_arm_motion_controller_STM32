@@ -32,8 +32,8 @@ class trajectory_class
 		error_class* 		myError;
 
 		// time Parameters
-		double delta_t;
-		double delta_t2;
+		float delta_t;
+		float delta_t2;
 
 		//private values (time base servo loop)
 		float d_s_max;				// maximum velocity

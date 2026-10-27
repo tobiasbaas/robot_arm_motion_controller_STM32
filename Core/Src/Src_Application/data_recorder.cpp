@@ -409,7 +409,7 @@ bool data_recorder_class::send_data_binary(void)
 	// static: Buffer darf den Funktionsrahmen ueberleben, da HAL_UART_Transmit_DMA
 	// nicht blockierend arbeitet und nach Rueckkehr weiter auf diesen Speicher zugreift.
 	static float data[4];
-	sprintf(str,"#REC HEADER START: \n* SERVO FREQUENCY: %d \n* RECORD RATE: %d \n* NUMBER Tables: %d \n* TABLE LENGTH: %d", SERVO_FRQ,this->record_rate_max, this->record_tables_max, DR_TABLE_LENGTH );
+	sprintf(str,"#REC HEADER START: \n* SERVO FREQUENCY: %d \n* RECORD RATE: %d \n* NUMBER Tables: %d \n* TABLE LENGTH: %d", (int)SERVO_FRQ,this->record_rate_max, this->record_tables_max, DR_TABLE_LENGTH );
 	send_string(str,true);
 	send_string(&this->table_name[0][0],true);
 	send_string(&this->table_name[1][0],true);

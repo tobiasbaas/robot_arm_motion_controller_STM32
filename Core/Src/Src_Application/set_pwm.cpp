@@ -124,13 +124,14 @@ void set_pwm_class::disableDriver(void)
 bool set_pwm_class::setPhaseVoltage(uint8_t phase, float voltage)
 {
     float pwmMax = (float)__HAL_TIM_GET_AUTORELOAD(my_htim);   // e.g. 17000 for 5 kHz
+    const float pwmScale = pwmMax / BOARD_VCC;
 
     bool isNegative = (voltage < 0.0f);   // get sign
     voltage = fabsf(voltage); // remove sign
 
     if(voltage > myMaxVoltage) voltage = myMaxVoltage;  // clamp voltage for voltage limitation
 
-    int32_t duty = (int32_t)((voltage / BOARD_VCC) * pwmMax);  // calc duty cycle for pwm
+    int32_t duty = (int32_t)(voltage * pwmScale);  // calc duty cycle for pwm
 
     // TODO Grenze für PWM, Siehe Datenblatt wegen Bootstrapkondensator etc.; duty muss < Arr sein
     pwmMax -= pwm_const::DUTY_LIMIT;

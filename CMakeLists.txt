@@ -48,6 +48,8 @@ file(GLOB_RECURSE APP_CXX_SOURCES CONFIGURE_DEPENDS
     ${CMAKE_SOURCE_DIR}/Core/Src/Src_Application/*.cpp
 )
 
+set_property(SOURCE ${APP_CXX_SOURCES} APPEND PROPERTY COMPILE_OPTIONS "-Wdouble-promotion")
+
 # CANopenNode (aus dem vorherigen Schritt)
 file(GLOB_RECURSE CANOPEN_SOURCES CONFIGURE_DEPENDS
     ${CMAKE_SOURCE_DIR}/CANopen/CANopenNode/*.c
