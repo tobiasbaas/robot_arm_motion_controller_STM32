@@ -68,7 +68,7 @@ TIM_OC_InitTypeDef sEmulConfigOC;
 char cmd_str[CMD_STR_LENGTH] = {0};
 volatile bool new_cmd = false;
 
-uint8_t axis_to_run = 0;
+volatile uint8_t axis_to_run = 0; // volatile bc the variable is used in two different interrupts
 uint64_t servo_cnt = 0;
 
 int32_t joint1_old = 0;
@@ -202,41 +202,44 @@ int main(void)
    for(uint8_t i=0;i<MAX_NUM_AXIS;i++)
    {
  	  pid_pos[i].init(
-        &myAxis[i],
-        &myParameter,
-        &myError
+      &myAxis[i],
+      &myParameter,
+      &myError
     );
 
  	  trajectory[i].init(
-        &myAxis[i],
-        &myParameter,
-        &myError
+      &myAxis[i],
+      &myParameter,
+      &myError
     );
 
- 	  pos_sensor[i].init(
-        &myAxis[i],
-        &myParameter,
-        &myError
+    pos_sensor[i].init(
+      &myAxis[i],
+      &myParameter,
+      &myError,
+      (i==0)?&hspi1:&hspi2,
+      (i==0)?GPIOG:GPIOD,
+      (i==0)?GPIO_PIN_5:GPIO_PIN_15
     );
 
  	  myAxis[i].init(
-        i,
-        &myError,
-        &trajectory[i],
-        &pos_sensor[i],
-        &pid_pos[i],
-        &current_control[i],
-        &myDR,
-        &myParameter
+      i,
+      &myError,
+      &trajectory[i],
+      &pos_sensor[i],
+      &pid_pos[i],
+      &current_control[i],
+      &myDR,
+      &myParameter
     );
 
     // Re-initialize current control with the known Axis
     current_control[i].init(
-        &myAxis[i],
-        &myParameter,
-        &myError,
-        &myPWM[i],
-        &trajectory[i]
+      &myAxis[i],
+      &myParameter,
+      &myError,
+      &myPWM[i],
+      &trajectory[i]
     );
 
     myAxis_ptr[i] 			= &myAxis[i];
@@ -330,11 +333,15 @@ int main(void)
     */
 	}
 
+  /* USER CODE END WHILE */
+
   /* NOTE : This function should not be modified, when the callback is needed,
             the HAL_TIM_PeriodElapsedCallback could be implemented in the user file
    */
 }
-
+  
+/* USER CODE BEGIN 3 */
+/* USER CODE END 3 */
 
 /**
   * @brief System Clock Configuration
@@ -427,7 +434,7 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
   //--------------------------------------------------------------
 	if (htim->Instance == TIM3) 
   {
-    //myAxis_ptr[axis_to_run]->myPos->mt6835_start_read(); // Initiates the request for the next encoder value via SPI and DMA
+    myAxis_ptr[axis_to_run]->myPos->mt6835_start_read(); // Initiates the request for the next encoder value via SPI and DMA
 
 		servo_cnt++;  // counter (Servo Loop)
 		axis_to_run = (axis_to_run + 1) % MAX_NUM_AXIS; // jump between axes
@@ -454,7 +461,21 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 		if (myDR_ptr) {
 			myDR_ptr->run();
 		}
+
+    
 	}
+}
+
+void HAL_SPI_TxRxCpltCallback(SPI_HandleTypeDef *hspi)
+{
+    for (uint8_t i = 0; i < MAX_NUM_AXIS; i++)
+    {
+        if (pos_sensor[i].mt6835_spi == hspi)
+        {
+            pos_sensor[i].mt6835_spi_txrx_cplt_callback(hspi);
+            break;
+        }
+    }
 }
 /* USER CODE END 4 */
 

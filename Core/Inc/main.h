@@ -188,8 +188,6 @@ void Error_Handler(void);
 #define UART4_RX_GPIO_Port GPIOC
 #define UART_5_TX_NEU_Pin GPIO_PIN_12
 #define UART_5_TX_NEU_GPIO_Port GPIOC
-#define SPI1_SS_TW29_A_Pin GPIO_PIN_5
-#define SPI1_SS_TW29_A_GPIO_Port GPIOG
 #define SPI3_SCK_EXT_Pin GPIO_PIN_9
 #define SPI3_SCK_EXT_GPIO_Port GPIOG
 #define UART_5_RX_Pin GPIO_PIN_2

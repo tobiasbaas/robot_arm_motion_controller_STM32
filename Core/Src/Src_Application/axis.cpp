@@ -100,7 +100,7 @@ bool axis_class::run(void)
 		// ...
 	#else
 		// open loop
-
+		ret = this->myPos->get_position_SPI(); // just called for data rec. for testing
 		ret = this->myPos->get_stepper_position();
 		ret = this->myTrajectory->calc();
 

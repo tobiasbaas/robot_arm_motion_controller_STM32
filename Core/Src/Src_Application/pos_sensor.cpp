@@ -9,6 +9,8 @@
 *****************************************************************************/
 
 #include "pos_sensor.h"
+#include "typedefs.h"
+#include <cstring>
 
 pos_sensor_class::pos_sensor_class(void)
 {
@@ -22,14 +24,29 @@ pos_sensor_class::pos_sensor_class(void)
 	this->numerator				= 0;
 	this->denominator			= 0;
 	this->position_offset		= 0;
+	this->next_idx   = 0;
+    this->ready_idx  = 0;
+    this->data_ready = false;
+	//this->mt6835_raw_offset		= 0;
+
+	// MT6835 Lese-Kommando in den (pro Achse eigenen) TX-Puffer legen
+	const uint8_t cmd[MT6835_FRAME_LEN] = {0xA0, 0x03, 0x00, 0x00, 0x00, 0x00};
+	memcpy(this->tx_buf, cmd, MT6835_FRAME_LEN);
+
 }
 
-void pos_sensor_class::init(axis_class* Axis_ptr, parameter_class* myParameter_ptr, error_class* myError_ptr)
+void pos_sensor_class::init(axis_class* Axis_ptr, parameter_class* myParameter_ptr, error_class* myError_ptr, SPI_HandleTypeDef* spi_ptr, GPIO_TypeDef* cs_port, uint16_t cs_pin)
 {
 	this->myParameter	= myParameter_ptr;
 	this->myError		= myError_ptr;
 	this->myAxis 		= Axis_ptr;
+	this->mt6835_spi	= spi_ptr;		// SPI je Achse (A: SPI1, B: SPI2)
+	this->mt6835_cs_port = cs_port;	// CS-Leitung je Achse
+	this->mt6835_cs_pin	= cs_pin;
 	this->refresh_parameter();
+
+	//mt6835
+	mt6835_init();
 }
 
 bool pos_sensor_class::setParameter(CMD_STRUCT* cmd)
@@ -40,11 +57,14 @@ bool pos_sensor_class::setParameter(CMD_STRUCT* cmd)
 	{
 		ret = this->myParameter->setParameter(cmd, &this->module_parameter[0]);
 		this->refresh_parameter();
+		ret = true;
 	}
 	else
 	{
 		this->myError->add(PARAMETER_MOD, ERR_PAM_LOCKED_AXS_ON, __FILE__, __LINE__); // Module Parameter Locked - Servo is Running
+		ret = false;
 	}
+
 	return ret;
 }
 
@@ -65,7 +85,7 @@ bool pos_sensor_class::refresh_parameter(void)
 	return ret;
 }
 
-bool pos_sensor_class::get_position(void)
+bool pos_sensor_class::get_position_AB(void)
 {
 	bool ret = true;
 	ret = pos_sensor_class::get_value_AB(); // get raw sensor value in "sensor_raw"
@@ -101,11 +121,104 @@ bool pos_sensor_class::get_value_AB(void)
 	return ret;
 }
 
-bool pos_sensor_class::get_value_SinCos(void)
+bool pos_sensor_class::get_position_SPI()
 {
-	bool ret = true;
-	// get value from Hardware (TW29 by SPI)
-	this->sensor_raw = 0;
+	// Check CRC
+	// Check Status
+	if(!this->data_ready)
+	{
+		return false; // noch kein SPI-Transfer abgeschlossen -> kein valider Wert im Buffer
+	}
 
-	return ret;
+	this->mt6835_result = mt6835_get_last_result();
+
+	/*this->position = mt6835_result.angle_rad; //TODO
+	this->velocity = (this->position - this->position_1) * SERVO_FRQ;
+	this->velocity_filtered_1 = this->velocity_filtered;
+	this->velocity_filtered = 0.98 *this->velocity_filtered_1 + 0.02 * this->velocity;
+	this->position_1 = this->position;*/
+
+	return true;
+}
+
+void pos_sensor_class::mt6835_init(void)
+{
+    // CSN idle-high, vom Encoder erwartet
+    HAL_GPIO_WritePin(this->mt6835_cs_port, this->mt6835_cs_pin, GPIO_PIN_SET);
+
+    // Ping-Pong-Zaehler für den asynchronen Betrieb zurücksetzen
+    this->next_idx   = 0;
+    this->ready_idx  = 0;
+    this->data_ready = false;
+}
+
+// Aufruf aus der ISR herraus
+void pos_sensor_class::mt6835_spi_txrx_cplt_callback(SPI_HandleTypeDef *hspi)
+{
+    if (hspi->Instance != this->mt6835_spi->Instance) {
+        return; /* falls mehrere SPI-Peripherien im Projekt genutzt werden */
+    }
+
+    // Transfer fertig -> CS wieder high
+    HAL_GPIO_WritePin(this->mt6835_cs_port, this->mt6835_cs_pin, GPIO_PIN_SET);
+
+    // gerade fertig gewordenen Puffer als "ready" markieren,
+    // den anderen für den nächsten Aufruf von mt6835_start_read() vormerken
+    this->ready_idx = this->next_idx;
+    this->next_idx ^= 1u;	// wechsel zwischen 0 und 1 (hin und her und rund herum)
+    this->data_ready = true;
+}
+
+void pos_sensor_class::mt6835_start_read(void)
+{
+    //CS low, danach DMA-Transfer anstoßen und sofort zurückkehren.
+    //Ab hier läuft die Übertragung komplett autonom in Hardware.
+
+    HAL_GPIO_WritePin(this->mt6835_cs_port, this->mt6835_cs_pin, GPIO_PIN_RESET);
+    HAL_SPI_TransmitReceive_DMA(this->mt6835_spi, this->tx_buf, this->rx_buf[this->next_idx], MT6835_FRAME_LEN);
+}
+
+uint32_t pos_sensor_class::mt6835_parse_angle(const uint8_t d[MT6835_FRAME_LEN]) const
+{
+    // d[0], d[1]: Antwort waehrend der Kommandophase, Encoder liefert hier Hi-Z -> irrelevant
+    return ((int32_t)d[2] << 13)     // ANGLE[20:13]
+         | ((int32_t)d[3] <<  5)     // ANGLE[12:5]
+         | ((int32_t)(d[4] >> 3));   // ANGLE[4:0] (STATUS[2:0] in Bit2..0)
+}
+
+void pos_sensor_class::mt6835_update_unwrapped_position(uint32_t raw_ticks)
+{
+    if (this->mt6835_first_sample) {
+        // erster Aufruf: nur Startwert setzen, kein Delta berechenbar
+        this->mt6835_last_raw_ticks = raw_ticks;
+        this->mt6835_position_ticks = (int64_t)raw_ticks;
+        this->mt6835_first_sample   = false;
+        return;
+    }
+
+    // kürzeste Distanz zum letzten Sample ermitteln (signed, mit 21-Bit-Wrap)
+    int32_t delta = (int32_t)((raw_ticks - this->mt6835_last_raw_ticks) & ((1UL << 21) - 1u));
+    if (delta >= (1L << 20)) {
+        delta -= (1L << 21);   // in [-2^20, 2^20) zwingen -> kürzester Weg, auch über den Wrap hinweg
+    }
+
+    this->mt6835_position_ticks += delta;   // akkumuliert über beliebig viele Umdrehungen, beide Richtungen
+    this->mt6835_last_raw_ticks  = raw_ticks;
+}
+
+mt6835_result_t pos_sensor_class::mt6835_get_last_result(void)
+{
+    mt6835_result_t r;
+    const uint8_t *d = rx_buf[this->ready_idx];
+
+    uint32_t angle_raw_abs = this->mt6835_parse_angle(d);
+    this->mt6835_update_unwrapped_position(angle_raw_abs);
+
+    r.angle_raw = (int32_t)this->mt6835_position_ticks;   // int32_t statt uint32_t im struct!
+    r.angle_deg = (float)this->mt6835_position_ticks * 360.0f / (float)(1UL << 21);
+    r.angle_rad = (float)this->mt6835_position_ticks * M_2PI  / (float)(1UL << 21);
+    r.status    = d[4] & 0x07u;
+    r.crc       = d[5];
+
+    return r;
 }
