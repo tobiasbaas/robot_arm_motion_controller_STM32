@@ -17,7 +17,7 @@
 //#define CONTROLLER_2
 //#define CONTROLLER_3
 
-#define USE_FOC			// use FOC, comment out for open loop
+//#define USE_FOC			// use FOC, comment out for open loop
 #define SEND_OVER_USB // Information is sent using `send_string_USB`; comment this out to send using `send_string_DMA`
 
 #define VERSION_STR 		"00.00.002"
@@ -165,7 +165,7 @@ extern const float PHASEFACTORB[3];
 #define M_PI 	3.141592654		// PI
 #define M_PI_2 	1.570796327		// PI/2
 #define M_PI_3 	1.047197551		// PI/3
-#define M_2PI 	6.283185307		// 2 * PI
+#define M_2PI 	6.283185307f		// 2 * PI
 
 #define SQRT_3 	1.732050808		// SQRT(3)
 

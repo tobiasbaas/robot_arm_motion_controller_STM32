@@ -100,7 +100,7 @@ bool axis_class::run(void)
 		// ...
 	#else
 		// open loop
-		ret = this->myPos->get_position_SPI(); // just called for data rec. for testing
+		ret = this->myPos->get_el_position(); // just called for data rec. for testing
 		ret = this->myPos->get_stepper_position();
 		ret = this->myTrajectory->calc();
 
@@ -108,9 +108,9 @@ bool axis_class::run(void)
 		{
 			if(this->myPid_Pos->servo_on == true)
 			{
-				float pid_output = this->myPid_Pos->PIDrun(this->myPos->position, this->myTrajectory->slowed_target);
+				float pid_output = this->myPid_Pos->PIDrun(this->myPos->mech_position, this->myTrajectory->slowed_target);
 
-				float angle_step = (this->myPos->position + 0.02f * pid_output);
+				float angle_step = (this->myPos->mech_position + 0.02f * pid_output);
 
 				this->myCurrent_Control->setMechAngle(angle_step);
 			}

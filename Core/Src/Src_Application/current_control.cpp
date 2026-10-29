@@ -174,40 +174,26 @@ float current_control_class::getMechAngle()
 // control loop for FOC and current control
 void current_control_class::currentControlLoop()
 {
-    //const uint32_t t0 = DWT->CYCCNT;
+    myAxis->myPos->mt6835_start_read();
 
     if(faultLatched || !myPWM->isDriverEnabled()) return;  
     readADC();
     if(checkOvercurrent()) return;  // Overcurrent protection
-    //const uint32_t t1 = DWT->CYCCNT;          // Ende: ADC lesen + Überstromprüfung
 
     // Encoder lesen
-    // Encoder Winkel umrechnen
+    this->phi_el = myAxis->myPos->get_el_position();
 
     parkTransformation(); // Park-Transformation using this->i_alpha and this->i_beta
-    //const uint32_t t2 = DWT->CYCCNT;          // Ende: Park (enthält sinf/cosf)
 
     PIController((this->i_d_set - this->i_d), this->PIController_id); // PI controller for id; uses u_lim as maximum, as id is regulated to 0 and u_d is therefore relatively small
     const float ud = PIController_id.pidOut;
     PIController_iq.pidOut_max = sqrtf(fmaxf(u_lim * u_lim - ud * ud, 0.0f));   // calculates the maximum output for u_d so that the magnitude of the voltage vector does not exceed u_lim
     PIController((this->i_q_set - this->i_q), this->PIController_iq); // PI controller for iq
-    //const uint32_t t3 = DWT->CYCCNT;          // Ende: beide PI-Regler
 
     inverseParkTransformation(this->PIController_id.pidOut, this->PIController_iq.pidOut); // inverse Park-Transformation
-    //const uint32_t t4 = DWT->CYCCNT;          // Ende: inverse Park
 
     //myPWM->setPhaseVoltage(0, this->u_alpha);   // set Phase 1/A
     //myPWM->setPhaseVoltage(1, this->u_beta);   // set Phase 2/B
-
-    //const uint32_t t5 = DWT->CYCCNT;          // Ende: beide PWM-Updates
-
-
-    /*
-    const uint32_t d[6] = { t1-t0, t2-t1, t3-t2, t4-t3, t5-t4, t5-t0 };
-    for (int i = 0; i < 6; i++) {
-        dbg_last[i] = d[i];
-        if (d[i] > dbg_max[i]) dbg_max[i] = d[i];
-    }*/
 
 }
 
@@ -352,6 +338,16 @@ void current_control_class::resetFaultLatch()
     this->faultLatched = false;
 }
 
+void current_control_class::setElectricAngleToZero()
+{
+    const float maxVoltage = myPWM->getVoltageLimit();
+
+    myPWM->setPhaseVoltage(1, 0.0); // deactivate Phase B
+    myPWM->setPhaseVoltage(0, maxVoltage);  // only Phase A
+
+    return;
+}
+
 void current_control_class::setAllCurrentsToZero()
 {
 	this->myPWM->setPhaseVoltage(0, 0); // set PWM LOW
@@ -361,6 +357,7 @@ void current_control_class::setAllCurrentsToZero()
 
 
 // Encoder
+
 
 
 void current_control_class::PIController(float error, PI_FOC& PI)

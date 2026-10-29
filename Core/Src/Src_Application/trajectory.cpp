@@ -75,7 +75,7 @@ bool trajectory_class::refresh_parameter(void)
 void trajectory_class::motion_init(void)
 {
 	// initial values
-	this->setpoint		= this->myAxis->myPos->position;	 
+	this->setpoint		= this->myAxis->myPos->mech_position;	 
 	this->slowed_target	= this->setpoint;	
 	this->vel 			= 0.0;
 	this->acc 			= 0.0;

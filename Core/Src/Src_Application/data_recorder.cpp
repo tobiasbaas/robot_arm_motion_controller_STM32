@@ -181,7 +181,7 @@ bool data_recorder_class::table_ptr_update(uint16_t id,uint8_t trace)
 					sprintf(&this->table_name[trace][0],"NON - Axis: %d",recInstance);
 					break;
 		case 1:		// Actual Position
-					this->rec_table_ptr[trace] = &this->myAxis[recInstance]->myPos->position;
+					this->rec_table_ptr[trace] = &this->myAxis[recInstance]->myPos->mech_position;
 					sprintf(&this->table_name[trace][0],"Position - Axis: %d",recInstance);
 					break;
 		case 2:		// slowed Target
@@ -208,19 +208,26 @@ bool data_recorder_class::table_ptr_update(uint16_t id,uint8_t trace)
 					this->rec_table_ptr[trace] = &this->myAxis[recInstance]->myTrajectory->acc;
 					sprintf(&this->table_name[trace][0],"Acceleration - Axis: %d",recInstance);
 					break;
-		case 8:		// MT6835 Encoder Pos
-					//this->rec_table_ptr[trace] = &this->myAxis[axis]->myPos->mt6835_result.angle_rad;
-					//sprintf(&this->table_name[trace][0],"MT6835 Enc Pos - Axis: %d",axis);
+
+		case 8:		// MT6835 Encoder Pos raw
+					//this->rec_table_ptr[trace] = &this->myAxis[recInstance]->myPos->mt6835_result.angle_raw;
+					//sprintf(&this->table_name[trace][0],"MT6835 Enc Pos: raw - Axis: %d",axis);
+					//break;
+		case 9:		// MT6835 Encoder Pos abs
+					this->rec_table_ptr[trace] = &this->myAxis[recInstance]->myPos->mt6835_result.angle_rad;
+					sprintf(&this->table_name[trace][0],"MT6835 Enc Pos: abs - Axis: %d",recInstance);
 					break;
-		// case 8:		// PID out Id
-		// 			this->rec_table_ptr[trace] = &this->myAxis[axis]->myCurrent_Control->PI[FOC_D].pid_y;
-		// 			sprintf(&this->table_name[trace][0],"FOC (d) PI Control Out - Axis: %d",axis);
-		// 			break;
-		case 9:		// Motor current
+		case 10:	// MT6835 Encoder Pos el
+					this->rec_table_ptr[trace] = &this->myAxis[recInstance]->myPos->mt6835_result.angle_el;
+					sprintf(&this->table_name[trace][0],"MT6835 Enc Pos: el - Axis: %d",recInstance);
+					break;
+		
+				
+		case 11:	// Motor current
 					this->rec_table_ptr[trace] = &this->myAxis[recInstance]->myCurrent_Control->i_alpha;
 					sprintf(&this->table_name[trace][0],"Current Phase1 - Axis: %d",recInstance);
 					break;
-		case 10:	// Motor current
+		case 12:	// Motor current
 					this->rec_table_ptr[trace] = &this->myAxis[recInstance]->myCurrent_Control->i_beta;
 					sprintf(&this->table_name[trace][0],"Current Phase2 - Axis: %d",recInstance);
 					break;

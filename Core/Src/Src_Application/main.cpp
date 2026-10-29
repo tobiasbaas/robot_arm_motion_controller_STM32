@@ -298,6 +298,21 @@ int main(void)
     }
   } 
 
+  // start encoder
+  for(uint8_t i=0;i<MAX_NUM_AXIS;i++)
+  {
+    myAxis_ptr[i]->myCurrent_Control->setElectricAngleToZero(); // PWM auf LOW
+    HAL_Delay(500); // wait for motor to move
+    myAxis_ptr[i]->myPos->mt6835_init();  // get start value and offset electrical angle
+  }
+
+  // for Encoder Test
+  //myAxis_ptr[0]->myCurrent_Control->myPWM->disableDriver();
+  //myAxis_ptr[1]->myCurrent_Control->myPWM->disableDriver();
+
+
+
+
   #ifdef USE_FOC
     // Start current control loop (runs in ADC ISR)
     HAL_ADCEx_InjectedStop(&hadc1); // axis 1/A
@@ -398,9 +413,10 @@ void HAL_ADCEx_InjectedConvCpltCallback(ADC_HandleTypeDef* hadc)
     if (hadc->Instance == ADC1)
     {
       //GPIOA->ODR ^= GPIO_ODR_OD4; // Toggle GPIO PA4 for debug reasons
-      //GPIOA->BSRR = GPIO_BSRR_BS4;  // set GPIO PA4 for debug reasons
+      GPIOA->BSRR = GPIO_BSRR_BS4;  // set GPIO PA4 for debug reasons
+      //myAxis_ptr[0]->myCurrent_Control->testRead();
       myAxis_ptr[0]->myCurrent_Control->currentControlLoop();
-      //GPIOA->BSRR = GPIO_BSRR_BR4;  // reset GPIO PA4
+      GPIOA->BSRR = GPIO_BSRR_BR4;  // reset GPIO PA4
 
     }     
     else if (hadc->Instance == ADC4)
@@ -434,10 +450,11 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
   //--------------------------------------------------------------
 	if (htim->Instance == TIM3) 
   {
-    myAxis_ptr[axis_to_run]->myPos->mt6835_start_read(); // Initiates the request for the next encoder value via SPI and DMA
+    if(axis_to_run == 0) myAxis_ptr[axis_to_run]->myPos->mt6835_start_read(); // Initiates the request for the next encoder value via SPI and DMA
 
-		servo_cnt++;  // counter (Servo Loop)
-		axis_to_run = (axis_to_run + 1) % MAX_NUM_AXIS; // jump between axes
+    servo_cnt++;  // counter (Servo Loop)
+		
+
 
 		// run axis if pointer is valid
 		if (axis_to_run < MAX_NUM_AXIS && myAxis_ptr[axis_to_run]) 
@@ -454,15 +471,25 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 				joint2_old = OD_PERSIST_COMM.x6002_joint2;
 			}
 
-			myAxis_ptr[axis_to_run]->run();
+      // run axis
+      if(axis_to_run == 0)
+      {
+        myAxis_ptr[axis_to_run]->run();
+      }
+      else 
+      {
+        #ifdef AXIS1_ENABLED
+        myAxis_ptr[axis_to_run]->run();
+        #endif
+      }
 		}
+
+    axis_to_run = (axis_to_run + 1) % MAX_NUM_AXIS; // jump between axes
 
 		// run data recorder if pointer is valid
 		if (myDR_ptr) {
 			myDR_ptr->run();
 		}
-
-    
 	}
 }
 

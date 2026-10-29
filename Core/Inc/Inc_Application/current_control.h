@@ -55,6 +55,8 @@ class current_control_class
 		void setMechAngle(float mech_angle); 	// used for old current loop
 		float getMechAngle();					// used for old current loop
 
+		//bool testRead(); // only for debug -> remove
+
 		void currentControlLoop();
 		void updateFOCSetpoints(float i_d_set, float i_q_set); // updates the setpoints for id and iq
 
@@ -65,6 +67,7 @@ class current_control_class
 		bool isFaultLatched();
 		void resetFaultLatch();
 
+		void setElectricAngleToZero();	// apply current only to phase A, so that the rotor moves to a known neutral position
 		void setAllCurrentsToZero();	// set both pwm dutys to zero
 		
 		void PIController(float error, PI_FOC& PI);	// parameter 'PI' is the structure for the respective controller
