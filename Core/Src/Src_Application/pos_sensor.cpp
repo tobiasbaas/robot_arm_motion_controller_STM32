@@ -28,10 +28,12 @@ void pos_sensor_class::init(axis_class* Axis_ptr, parameter_class* myParameter_p
     if(myAxis->my_instance == 0)    // Axis 1/A
     {
         this->pole_pairs = AXA_MOTORSTEP_COUNT / 4;
+        this->dir = POS_DIR_A;
     }
     else                            // Axis 2/B
     {
         this->pole_pairs = AXB_MOTORSTEP_COUNT / 4;
+        this->dir = POS_DIR_B;
     }
 
     this->pos_scale = (float)(M_2PI * (float)numerator / (float)denominator);   // scale for mech angle
@@ -161,7 +163,8 @@ bool pos_sensor_class::mt6835_init(void)
     mt6835_result.angle_rad = 0.0f;
     mt6835_result.angle_el  = 0.0f;
     abs_offset              = 0;                                // später per Parameter
-    init_el_angle           = (avg * pole_pairs) & MT6835_MASK; // absolute value measured after alignment
+    const int32_t avg_dir   = (int32_t)avg * (int32_t)this->dir;
+    init_el_angle           = ((uint32_t)(avg_dir * (int32_t)pole_pairs)) & MT6835_MASK; // absolute value measured after alignment
     //el_offset_deg           = (float)el_offset * 360.0f / 2097152.0f;   // public, für den Recorder
     mt6835_init_sample      = false;
     return true;
@@ -268,23 +271,10 @@ void pos_sensor_class::mt6835_get_last_result(void)
 
     uint32_t raw = this->mt6835_parse_angle(d);   // extract raw angle from SPI buffer
 
-    /*// initial measurement
-    if(this->mt6835_init_sample)
-    { 
-        memcpy(dbg_init_frame, d, 6);
-        this->mt6835_result.angle_raw = 0;
-        abs_offset = (int32_t)raw;              // is used to set the fist position as the zero position on start-up; 
-                                                // later, abs_offset should be set via the parameter to get the same zero position every time
-        this->mt6835_result.angle_rad = (float)((int32_t)raw - abs_offset) * pos_scale;
-        el_offset = ((int32_t)raw * pole_pairs) & pos_sensor_const::MT6835_MASK;
-        //this->mt6835_result.angle_el = 0.0f;
-        this->mt6835_last_raw_ticks = raw;
-        return;
-    }*/
-
     // kürzeste Distanz zum letzten Sample ermitteln (signed, mit 21-Bit-Wrap)
     int32_t delta = (int32_t)((raw - this->mt6835_last_raw_ticks) & pos_sensor_const::MT6835_MASK);
     if (delta >= (1L << 20)) delta -= (1L << 21);   // in [-2^20, 2^20) zwingen -> kürzester Weg, auch über den Wrap hinweg
+    delta *= (int32_t)this->dir;                    // auf FOC-positive Richtung normieren
 
 
     this->mt6835_last_raw_ticks  = raw;
@@ -297,7 +287,8 @@ void pos_sensor_class::mt6835_get_last_result(void)
 
 
     // electircal angle [rad]; 0 <= angle_el <= 2*Pi
-    const uint32_t e  = (raw * pole_pairs) & pos_sensor_const::MT6835_MASK;      // Lage innerhalb einer elektrischen Periode
+    const int32_t  raw_dir = (int32_t)raw * (int32_t)this->dir;                   // auf FOC-positive Richtung normieren
+    const uint32_t e  = ((uint32_t)(raw_dir * (int32_t)pole_pairs)) & pos_sensor_const::MT6835_MASK;      // Lage innerhalb einer elektrischen Periode
     const uint32_t el = (e - init_el_angle) & pos_sensor_const::MT6835_MASK;
     mt6835_result.angle_el = (float)el * pos_sensor_const::RAD_PER_TICK_EL;      // 0 .. 2π
 

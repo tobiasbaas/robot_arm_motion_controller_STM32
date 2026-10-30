@@ -158,6 +158,10 @@ extern const float PHASEFACTORB[3];
 #define	SERVO_AXIS_FRQ 		SERVO_FRQ /	MAX_NUM_AXIS	// Servo Frequenz
 #define	SERVO_AXIS_TIME		MAX_NUM_AXIS / SERVO_FRQ 	// Servo Time
 
+// Encoder-Zaehlrichtung: +1 = Rohwert steigt in FOC-positiver Richtung (A -> B); -1 = invertiert
+#define POS_DIR_A			(-1)
+#define POS_DIR_B			(-1)
+
 #define	SYSTEM_SERVO_TIME 	0.0001f 		// Servo Zyklus Zeit in [??]
 #define TIMER_COUTER_MAX	160000		// Max counter for timer of servo frq (Timer clock 160 MHz) //TODO Not 170 MHz?
 

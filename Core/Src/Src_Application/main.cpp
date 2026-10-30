@@ -303,7 +303,10 @@ int main(void)
   {
     myAxis_ptr[i]->myCurrent_Control->setElectricAngleToZero(); // PWM auf LOW
     HAL_Delay(500); // wait for motor to move
-    myAxis_ptr[i]->myPos->mt6835_init();  // get start value and offset electrical angle
+    if (!myAxis_ptr[i]->myPos->mt6835_init())  // get start value and offset electrical angle
+    {
+      myError.add(ENCODER_MOD, ERR_ENC_INIT_FAILED, __FILE__, __LINE__);
+    }
   }
 
   // for Encoder Test

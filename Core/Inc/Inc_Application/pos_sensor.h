@@ -117,6 +117,7 @@ class pos_sensor_class
         uint32_t    init_el_angle;              // value for which the electrical angle is 0
 
         uint32_t pole_pairs;
+        int8_t      dir;                    // Encoder-Zaehlrichtung: +1/-1 (FOC-positive Richtung)
         volatile float  pos_scale;              // mech winkel [rad Abtrieb pro Tick]
 
         bool mt6835_init_sample;            // important for the (first) initial measurement

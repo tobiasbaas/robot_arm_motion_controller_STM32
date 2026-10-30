@@ -86,6 +86,7 @@ typedef enum
 	ERR_PAM_OUT_OF_RANGE	= 204,
 	ERR_VALUE_ERR			= 300,
 	ERR_VARIABLE_STR_CONV	= 301,
+	ERR_ENC_INIT_FAILED		= 400,
 	ERR_UNKNOWN_ERROR		= 1000
 }ERROR_ID_NUM;
 
@@ -94,7 +95,7 @@ class error_class
 
     private:
 
-		#define MAX_NUM_ERRORS 26
+		#define MAX_NUM_ERRORS 27
 		const ERRORS my_sys_error_list[MAX_NUM_ERRORS] =
 		{
 				{ERR_SERVO_LOAD_2_HIGH	, "Warning, Servo-Load over 70%"}, 			// WARNING 	-> negative error number
@@ -122,6 +123,7 @@ class error_class
 				{ERR_PAM_OUT_OF_RANGE	, "Parameter Out of Range"},
 				{ERR_VALUE_ERR			, "Invalid Value Format"},
 				{ERR_VARIABLE_STR_CONV	, "Variable to String Convertion faild"	},
+				{ERR_ENC_INIT_FAILED	, "Encoder initialization failed"},
 				{ERR_UNKNOWN_ERROR		, "Unknown Error"}
 		};
 
