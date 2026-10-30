@@ -47,6 +47,8 @@ void pos_sensor_class::init(axis_class* Axis_ptr, parameter_class* myParameter_p
     this->mt6835_init_sample = true;
 
 	//mt6835_init();
+
+    dbg_first_taken = false;    // Debug -> remove
 }
 
 bool pos_sensor_class::setParameter(CMD_STRUCT* cmd)
@@ -108,6 +110,64 @@ float pos_sensor_class::get_el_position(void)
 
 bool pos_sensor_class::mt6835_init(void)
 {
+    using namespace pos_sensor_const;
+    HAL_GPIO_WritePin(mt6835_cs_port, mt6835_cs_pin, GPIO_PIN_SET);
+    next_idx = 0;  
+    ready_idx = 0;  
+    data_ready = false;
+    memset(&mt6835_result, 0, sizeof(mt6835_result));
+    stale_cnt = 0;  
+
+    constexpr uint32_t SKIP  = 3;      // die ersten Frames wegwerfen
+    constexpr uint32_t N_AVG = 64;
+    int32_t  first = 0, dmin = 0, dmax = 0;
+    int64_t  sum   = 0;
+    uint32_t good  = 0, tries = 0;
+    const uint32_t t0 = HAL_GetTick();
+
+    while (good < N_AVG)
+    {
+        if (HAL_GetTick() - t0 > 500u) return false;          // Gesamt-Timeout
+
+        data_ready = false;
+        mt6835_start_read();
+
+        const uint32_t t1 = HAL_GetTick();
+        while (!data_ready && (HAL_GetTick() - t1 < 5u)) {}
+        if (!data_ready) continue;                            // Transfer kam nicht an
+        if (++tries <= SKIP) continue;                        // Aufwärmframes verwerfen
+
+        const uint8_t *d = rx_buf[ready_idx];
+        if (!mt6835_check_crc(d)) continue;                   // Null- und Fehlframes verwerfen
+
+
+        const int32_t raw = (int32_t)mt6835_parse_angle(d);
+        if (good == 0) first = raw;
+        int32_t diff = raw - first;                           // Wrap beachten
+        if      (diff >  (int32_t)(MT6835_MAX_VAL / 2u)) diff -= (int32_t)MT6835_MAX_VAL;
+        else if (diff < -(int32_t)(MT6835_MAX_VAL / 2u)) diff += (int32_t)MT6835_MAX_VAL;
+        if (diff < dmin) dmin = diff;
+        if (diff > dmax) dmax = diff;
+        sum += diff;
+        good++;
+        HAL_Delay(1);
+    }
+    if (dmax - dmin > 300) return false;                      // Rotor bewegt sich noch
+
+    const uint32_t avg = ((uint32_t)(first + (int32_t)(sum / (int64_t)N_AVG))) & MT6835_MASK;
+
+    mt6835_last_raw_ticks   = avg;
+    mt6835_result.angle_raw = 0;                                // Startposition = Nullposition
+    mt6835_result.angle_rad = 0.0f;
+    mt6835_result.angle_el  = 0.0f;
+    abs_offset              = 0;                                // später per Parameter
+    init_el_angle           = (avg * pole_pairs) & MT6835_MASK; // absolute value measured after alignment
+    //el_offset_deg           = (float)el_offset * 360.0f / 2097152.0f;   // public, für den Recorder
+    mt6835_init_sample      = false;
+    return true;
+
+    /*
+    // Older version -> remove
     // CSN idle-high, vom Encoder erwartet
     HAL_GPIO_WritePin(this->mt6835_cs_port, this->mt6835_cs_pin, GPIO_PIN_SET);
 
@@ -131,6 +191,31 @@ bool pos_sensor_class::mt6835_init(void)
     this->mt6835_init_sample = false;  // from here, electrical and absolute angles will be counted in the usual way
 
     return true;
+    */
+}
+
+// CRC-8, Polynom 0x07 (x^8 + x^2 + x + 1), Startwert 0x00, ohne Spiegelung, ohne End-XOR
+uint8_t pos_sensor_class::mt6835_crc8(const uint8_t *data, uint32_t len)
+{
+    uint8_t crc = 0x00u;
+    for (uint32_t i = 0; i < len; i++)
+    {
+        crc ^= data[i];
+        for (uint8_t b = 0; b < 8u; b++)
+        {
+            crc = (crc & 0x80u) ? (uint8_t)((crc << 1) ^ 0x07u)
+                                : (uint8_t)(crc << 1);
+        }
+    }
+    return crc;
+}
+
+bool pos_sensor_class::mt6835_check_crc(const uint8_t d[MT6835_FRAME_LEN]) const
+{
+    // d[0], d[1] gehören zur Kommandophase und gehen nicht in die Prüfsumme ein
+        
+    if ((d[2] | d[3] | d[4] | d[5]) == 0u) return false; // Nullframe (MISO dauerhaft LOW) hat zufällig eine gültige CRC -> gesondert verwerfen
+    return mt6835_crc8(&d[2], 3u) == d[5];
 }
 
 void pos_sensor_class::mt6835_start_read(void)
@@ -170,21 +255,32 @@ void pos_sensor_class::mt6835_get_last_result(void)
 {
 
     const uint8_t *d = rx_buf[this->ready_idx]; // get SPI buffer
+    data_ready = false;
+
+    // crc check
+    if (!mt6835_check_crc(d))
+    {
+        if (crc_err_cnt < 0xFFFFu) crc_err_cnt++;
+        return;                               // Winkel und Position bleiben beim letzten gültigen Wert
+    }
+    crc_err_cnt = 0u;
+    
+
     uint32_t raw = this->mt6835_parse_angle(d);   // extract raw angle from SPI buffer
 
-    // initial measurement
+    /*// initial measurement
     if(this->mt6835_init_sample)
     { 
-        this->mt6835_result.angle_raw = (int32_t)raw;
-        abs_offset = mt6835_result.angle_raw;   // is used to set the fist position as the zero position on start-up; 
+        memcpy(dbg_init_frame, d, 6);
+        this->mt6835_result.angle_raw = 0;
+        abs_offset = (int32_t)raw;              // is used to set the fist position as the zero position on start-up; 
                                                 // later, abs_offset should be set via the parameter to get the same zero position every time
-        this->mt6835_result.angle_rad = (float)(mt6835_result.angle_raw - abs_offset) * pos_scale;
-        el_offset = (mt6835_result.angle_raw * pole_pairs) & pos_sensor_const::MT6835_MASK;
+        this->mt6835_result.angle_rad = (float)((int32_t)raw - abs_offset) * pos_scale;
+        el_offset = ((int32_t)raw * pole_pairs) & pos_sensor_const::MT6835_MASK;
         //this->mt6835_result.angle_el = 0.0f;
         this->mt6835_last_raw_ticks = raw;
         return;
-    }
-
+    }*/
 
     // kürzeste Distanz zum letzten Sample ermitteln (signed, mit 21-Bit-Wrap)
     int32_t delta = (int32_t)((raw - this->mt6835_last_raw_ticks) & pos_sensor_const::MT6835_MASK);
@@ -202,7 +298,7 @@ void pos_sensor_class::mt6835_get_last_result(void)
 
     // electircal angle [rad]; 0 <= angle_el <= 2*Pi
     const uint32_t e  = (raw * pole_pairs) & pos_sensor_const::MT6835_MASK;      // Lage innerhalb einer elektrischen Periode
-    const uint32_t el = (e - el_offset) & pos_sensor_const::MT6835_MASK;
+    const uint32_t el = (e - init_el_angle) & pos_sensor_const::MT6835_MASK;
     mt6835_result.angle_el = (float)el * pos_sensor_const::RAD_PER_TICK_EL;      // 0 .. 2π
 
     /*mt6835_result.angle_el  = (mt6835_result.angle_raw * rad_per_tick);  
@@ -216,8 +312,7 @@ void pos_sensor_class::mt6835_get_last_result(void)
     mt6835_result.status    = d[4] & 0x07u;
     mt6835_result.crc       = d[5];
 
-
-    data_ready = false;
+    angle_raw_float = (float)mt6835_result.angle_raw;   // for Data recorder
 
     return;
 }

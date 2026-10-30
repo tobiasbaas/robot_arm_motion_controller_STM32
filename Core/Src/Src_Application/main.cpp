@@ -307,8 +307,8 @@ int main(void)
   }
 
   // for Encoder Test
-  //myAxis_ptr[0]->myCurrent_Control->myPWM->disableDriver();
-  //myAxis_ptr[1]->myCurrent_Control->myPWM->disableDriver();
+  myAxis_ptr[0]->myCurrent_Control->setAllCurrentsToZero();
+  myAxis_ptr[1]->myCurrent_Control->setAllCurrentsToZero();
 
 
 

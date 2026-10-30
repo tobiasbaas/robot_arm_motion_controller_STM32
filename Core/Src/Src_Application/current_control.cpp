@@ -155,8 +155,8 @@ bool current_control_class::oldCurrentLoop()
 		// TODO Error here
 	}
 
-	this->myPWM->setPhaseVoltage(0, u_sin);
-	this->myPWM->setPhaseVoltage(1, u_cos);
+	this->myPWM->setPhaseVoltage(1, u_sin);
+	this->myPWM->setPhaseVoltage(0, u_cos);
 
 	return 0;
 }

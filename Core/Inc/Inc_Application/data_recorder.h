@@ -109,6 +109,8 @@ class data_recorder_class
 		TRIGGER_TYPE  	trigger_type;
 		axis_class* 	myAxis[MAX_NUM_AXIS];
 		char 			table_name[4][40];
+
+		float timeStamp;
 };
 
 #endif
