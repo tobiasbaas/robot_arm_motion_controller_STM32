@@ -123,7 +123,7 @@ void set_pwm_class::disableDriver(void)
 
 bool set_pwm_class::setPhaseVoltage(uint8_t phase, float voltage)
 {
-    float pwmMax = (float)__HAL_TIM_GET_AUTORELOAD(my_htim);   // e.g. 17000 for 5 kHz
+    float pwmMax = (float)__HAL_TIM_GET_AUTORELOAD(my_htim);   // e.g. 3400 for 25 kHz
     const float pwmScale = pwmMax / BOARD_VCC;
 
     bool isNegative = (voltage < 0.0f);   // get sign

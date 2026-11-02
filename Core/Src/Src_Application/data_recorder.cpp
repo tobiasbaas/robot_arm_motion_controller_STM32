@@ -220,101 +220,48 @@ bool data_recorder_class::table_ptr_update(uint16_t id,uint8_t trace)
 					this->rec_table_ptr[trace] = &this->myAxis[recInstance]->myPos->mt6835_result.angle_rad;
 					sprintf(&this->table_name[trace][0],"MT6835 Enc Pos: abs - Axis: %d",recInstance);
 					break;
+
 		case 10:	// MT6835 Encoder Pos el
 					this->rec_table_ptr[trace] = &this->myAxis[recInstance]->myPos->mt6835_result.angle_el;
 					sprintf(&this->table_name[trace][0],"MT6835 Enc Pos: el - Axis: %d",recInstance);
 					break;
 				
-		case 11:	// Motor current
-					this->rec_table_ptr[trace] = &this->myAxis[recInstance]->myCurrent_Control->i_alpha;
-					sprintf(&this->table_name[trace][0],"Current Phase1 - Axis: %d",recInstance);
+		case 11:	// FOC U_d
+					this->rec_table_ptr[trace] = &this->myAxis[recInstance]->myCurrent_Control->u_d;
+					sprintf(&this->table_name[trace][0],"FOC Ud - Axis: %d",recInstance);
 					break;
-		case 12:	// Motor current
-					this->rec_table_ptr[trace] = &this->myAxis[recInstance]->myCurrent_Control->i_beta;
-					sprintf(&this->table_name[trace][0],"Current Phase2 - Axis: %d",recInstance);
+		case 12:	// FOC U_q
+					this->rec_table_ptr[trace] = &this->myAxis[recInstance]->myCurrent_Control->u_q;
+					sprintf(&this->table_name[trace][0],"FOC Uq - Axis: %d",recInstance);
 					break;
-		/*
-		case 11:		// Motor current
-					this->rec_table_ptr[trace] = &this->myAxis[recInstance]->myCurrent_Control->myADC_Values[2];
-					sprintf(&this->table_name[trace][0],"Current Phase2-ShuntC - Axis: %d",recInstance);
+		
+		case 14:	// FOC Id
+					this->rec_table_ptr[trace] = &this->myAxis[recInstance]->myCurrent_Control->i_d;
+		 			sprintf(&this->table_name[trace][0],"FOC Id - Axis: %d",recInstance);
+		 			break;
+		case 15:	// FOC Iq
+					this->rec_table_ptr[trace] = &this->myAxis[recInstance]->myCurrent_Control->i_q;
+		 			sprintf(&this->table_name[trace][0],"FOC Iq - Axis: %d",recInstance);
+		 			break;
+		case 16:	// FOC I_alpha
+		 			this->rec_table_ptr[trace] = &this->myAxis[recInstance]->myCurrent_Control->i_alpha;
+		 			sprintf(&this->table_name[trace][0],"FOC I_Alpha - Axis: %d",recInstance);
+		 			break;
+		case 17:	// FOC I_beta
+		 			this->rec_table_ptr[trace] = &this->myAxis[recInstance]->myCurrent_Control->i_beta;
+		 			sprintf(&this->table_name[trace][0],"FOC I_Beta - Axis: %d",recInstance);
 					break;
-		case 12:	// Motor current
-					this->rec_table_ptr[trace] = &this->myAxis[recInstance]->myCurrent_Control->myADC_Values[3];
-					sprintf(&this->table_name[trace][0],"Current Phase2-ShuntD - Axis: %d",recInstance);
+
+		case 18:	// FOC I_d_soll
+		 			this->rec_table_ptr[trace] = &this->myAxis[recInstance]->myCurrent_Control->rec_id_set;
+		 			sprintf(&this->table_name[trace][0],"FOC Id_Set - Axis: %d",recInstance);
 					break;
-		*/
-		// case 9:		// PID out Iq
-		// 			this->rec_table_ptr[trace] = &this->myAxis[axis]->myCurrent_Control->PI[FOC_Q].pid_y;
-		// 			sprintf(&this->table_name[trace][0],"FOC (q) PI Control Out - Axis: %d",axis);
-		// 			break;
-		// case 10:	// PID ERROR out Id
-		// 			this->rec_table_ptr[trace] = &this->myAxis[axis]->myCurrent_Control->PI[FOC_D].error;
-		// 			sprintf(&this->table_name[trace][0],"FOC (d) PI error - Axis: %d",axis);
-		// 			break;
-		// case 11:	// PID ERROR out Iq
-		// 			this->rec_table_ptr[trace] = &this->myAxis[axis]->myCurrent_Control->PI[FOC_Q].error;
-		// 			sprintf(&this->table_name[trace][0],"FOC (q) PI error - Axis: %d",axis);
-		// 			break;
-		// case 12:	// Current in (Motor current)
-		// 			this->rec_table_ptr[trace] = &this->myAxis[axis]->myCurrent_Control->current_in;
-		// 			sprintf(&this->table_name[trace][0],"FOC Current In - Axis: %d",axis);
-		// 			break;
-		// case 13:	//Phi Mechanic
-		// 			this->rec_table_ptr[trace] = &this->myAxis[axis]->myCurrent_Control->phi_mech;
-		// 			sprintf(&this->table_name[trace][0],"FOC Mechanical Angle - Axis: %d",axis);
-		// 			break;
-		// case 14:	//Phi Elektric
-		// 			this->rec_table_ptr[trace] = &this->myAxis[axis]->myCurrent_Control->phi_el;
-		// 			sprintf(&this->table_name[trace][0],"FOC Electrical Angle - Axis: %d",axis);
-		// 			break;
-		// case 15:	// Delta PHI
-		// 			this->rec_table_ptr[trace] = &this->myAxis[axis]->myCurrent_Control->fph_delta_counts_fl;
-		// 			sprintf(&this->table_name[trace][0],"FPH Delta Counts - Axis: %d",axis);
-		// 			break;
-		// case 16:	// Uref
-		// 			this->rec_table_ptr[trace] = &this->myAxis[axis]->myCurrent_Control->U_ref;
-		// 			sprintf(&this->table_name[trace][0],"FOC (SVM) U-Vector  - Axis: %d",axis);
-		// 			break;
-		// case 17:	// Current U
-		// 			this->rec_table_ptr[trace] = &this->myAxis[axis]->myCurrent_Control->Ia;
-		// 			sprintf(&this->table_name[trace][0],"FOC Phase Current U - Axis: %d",axis);
-		// 			break;
-		// case 18:	// Current V
-		// 			this->rec_table_ptr[trace] = &this->myAxis[axis]->myCurrent_Control->Ib;
-		// 			sprintf(&this->table_name[trace][0],"FOC Phase Current V - Axis: %d",axis);
-		// 			break;
-		// case 19:	// Current W
-		// 			this->rec_table_ptr[trace] = &this->myAxis[axis]->myCurrent_Control->Ic;
-		// 			sprintf(&this->table_name[trace][0],"FOC Phase Current W - Axis: %d",axis);
-		// 			break;
-		// case 20:	// PWM Time A
-		// 			this->rec_table_ptr[trace] = &this->myAxis[axis]->myCurrent_Control->OnTimeA;
-		// 			sprintf(&this->table_name[trace][0],"FOC Phase Voltage U - Axis: %d",axis);
-		// 			break;
-		// case 21:	// PWM Time B
-		// 			this->rec_table_ptr[trace] = &this->myAxis[axis]->myCurrent_Control->OnTimeB;
-		// 			sprintf(&this->table_name[trace][0],"FOC Phase Voltage V - Axis: %d",axis);
-		// 			break;
-		// case 22:	// PWM Time C
-		// 			this->rec_table_ptr[trace] = &this->myAxis[axis]->myCurrent_Control->OnTimeC;
-		// 			sprintf(&this->table_name[trace][0],"FOC Phase Voltage W - Axis: %d",axis);
-		// 			break;
-		// case 23:	// FOC Id
-		// 			this->rec_table_ptr[trace] = &this->myAxis[axis]->myCurrent_Control->Id;
-		// 			sprintf(&this->table_name[trace][0],"FOC Id - Axis: %d",axis);
-		// 			break;
-		// case 24:	// FOC Iq
-		// 			this->rec_table_ptr[trace] = &this->myAxis[axis]->myCurrent_Control->Iq;
-		// 			sprintf(&this->table_name[trace][0],"FOC Iq - Axis: %d",axis);
-		// 			break;
-		// case 25:	// FOC I_alpha
-		// 			this->rec_table_ptr[trace] = &this->myAxis[axis]->myCurrent_Control->I_alpha;
-		// 			sprintf(&this->table_name[trace][0],"FOC I_Alpha - Axis: %d",axis);
-		// 			break;
-		// case 26:	// FOC I_beta
-		// 			this->rec_table_ptr[trace] = &this->myAxis[axis]->myCurrent_Control->I_beta;
-		// 			sprintf(&this->table_name[trace][0],"FOC I_Beta - Axis: %d",axis);
-		// 			break;
+		
+		case 19:	// FOC I_q_soll
+		 			this->rec_table_ptr[trace] = &this->myAxis[recInstance]->myCurrent_Control->rec_iq_set;
+		 			sprintf(&this->table_name[trace][0],"FOC Iq_Set - Axis: %d",recInstance);
+		 			break;
+
 		default:	// no data (0.0)
 					this->rec_table_ptr[trace] = &this->null;
 					sprintf(&this->table_name[trace][0],"NON - Axis: %d",recInstance);

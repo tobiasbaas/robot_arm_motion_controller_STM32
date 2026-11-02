@@ -33,6 +33,7 @@
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 #include "usbd_cdc_if.h"
+#include <cstdint>
 #include <stdint.h>
 #include "typedefs.h"
 #include "commando_interpreter.h"
@@ -68,6 +69,7 @@ TIM_OC_InitTypeDef sEmulConfigOC;
 char cmd_str[CMD_STR_LENGTH] = {0};
 volatile bool new_cmd = false;
 
+volatile uint8_t cc_axis = 0; // current control axis; indicates for which axis cc currently runs
 volatile uint8_t axis_to_run = 0; // volatile bc the variable is used in two different interrupts
 uint64_t servo_cnt = 0;
 
@@ -263,17 +265,10 @@ int main(void)
   #endif
 
   
-  
-  // 1. Slave (TIM1, Achse A) vorbereiten: Kanäle freigeben, Zähler läuft noch nicht
-  myCurrent_Control[0]->myPWM->startPWM();
-
-  // 2. Zähler um die halbe Periode vorstellen
-  __HAL_TIM_SET_COUNTER(&htim1, __HAL_TIM_GET_AUTORELOAD(&htim1) - 1);
-
-  // 3. Master (TIM20, Achse B) zuletzt starten, das startet TIM1 gleich mit
-  myCurrent_Control[1]->myPWM->startPWM();
-
-
+  // Start Master-Slave-PWM
+  myCurrent_Control[0]->myPWM->startPWM(); // 1. Slave (TIM1, Achse A) vorbereiten: Kanäle freigeben, Zähler läuft noch nicht 
+  //__HAL_TIM_SET_COUNTER(&htim1, __HAL_TIM_GET_AUTORELOAD(&htim1) - 1); // 2. Zähler um die halbe Periode vorstellen
+  myCurrent_Control[1]->myPWM->startPWM(); // 3. Master (TIM20, Achse B) zuletzt starten, das startet TIM1 gleich mit
 
 
   // Start ADC
@@ -301,28 +296,44 @@ int main(void)
   // start encoder
   for(uint8_t i=0;i<MAX_NUM_AXIS;i++)
   {
-    myAxis_ptr[i]->myCurrent_Control->setElectricAngleToZero(); // PWM auf LOW
-    HAL_Delay(500); // wait for motor to move
-    if (!myAxis_ptr[i]->myPos->mt6835_init())  // get start value and offset electrical angle
+    for (int j = 0; j < 3; j++) // try 3 times
     {
-      myError.add(ENCODER_MOD, ERR_ENC_INIT_FAILED, __FILE__, __LINE__);
+      myAxis_ptr[i]->myCurrent_Control->setElectricAngleToZero();
+      HAL_Delay(200);
+
+      if (myAxis_ptr[i]->myPos->mt6835_init())
+      {
+          break;
+      }
+
+      if(j >= 2)
+      {
+        myError.add(ENCODER_MOD, ERR_ENC_INIT_FAILED, __FILE__, __LINE__);
+      }
+
+      myAxis_ptr[i]->myCurrent_Control->setAllCurrentsToZero();
+      HAL_Delay(200);
     }
   }
 
-  // for Encoder Test
   myAxis_ptr[0]->myCurrent_Control->setAllCurrentsToZero();
   myAxis_ptr[1]->myCurrent_Control->setAllCurrentsToZero();
 
 
 
-
   #ifdef USE_FOC
-    // Start current control loop (runs in ADC ISR)
-    HAL_ADCEx_InjectedStop(&hadc1); // axis 1/A
-    HAL_ADCEx_InjectedStart_IT(&hadc1); // axis 2/B
+    // Stromregelkreis nur für Achsen mit erfolgreich initialisiertem Encoder starten
+    ADC_HandleTypeDef* foc_adc[MAX_NUM_AXIS] = {&hadc1, &hadc4};
 
-    HAL_ADCEx_InjectedStop(&hadc4); // axis 1/A
-    HAL_ADCEx_InjectedStart_IT(&hadc4); // axis 2/B
+    for(uint8_t i=0;i<MAX_NUM_AXIS;i++)
+    {
+      if(myAxis_ptr[i]->myPos->is_encoder_ready())
+      {
+        HAL_ADCEx_InjectedStop(foc_adc[i]);
+        HAL_ADCEx_InjectedStart_IT(foc_adc[i]);
+        break;  // just one callback for half the controller frequenc
+      }
+    }
   #endif
   
   HAL_TIM_Base_Start_IT(&htim3); // Start Servo-Loop
@@ -413,23 +424,16 @@ void SystemClock_Config(void)
 void HAL_ADCEx_InjectedConvCpltCallback(ADC_HandleTypeDef* hadc)
 {
   #ifdef USE_FOC
-    if (hadc->Instance == ADC1)
+    if (hadc->Instance == ADC1 || hadc->Instance == ADC4)
     {
       //GPIOA->ODR ^= GPIO_ODR_OD4; // Toggle GPIO PA4 for debug reasons
-      GPIOA->BSRR = GPIO_BSRR_BS4;  // set GPIO PA4 for debug reasons
-      //myAxis_ptr[0]->myCurrent_Control->testRead();
-      myAxis_ptr[0]->myCurrent_Control->currentControlLoop();
-      GPIOA->BSRR = GPIO_BSRR_BR4;  // reset GPIO PA4
+      //GPIOA->BSRR = GPIO_BSRR_BS4;  // set GPIO PA4 for debug reasons
 
-    }     
-    else if (hadc->Instance == ADC4)
-    {
-      //GPIOA->ODR ^= GPIO_ODR_OD9; // Toggle GPIO PA9 for debug reasons
-      //GPIOA->BSRR = GPIO_BSRR_BS9;  // set GPIO PA9 for debug reasons
-      myAxis_ptr[1]->myCurrent_Control->currentControlLoop();
-      //GPIOA->BSRR = GPIO_BSRR_BR9;  // set GPIO PA9 for debug reasons
+      myAxis_ptr[cc_axis]->myCurrent_Control->currentControlLoop();
+      cc_axis = (cc_axis + 1) % MAX_NUM_AXIS;  // jump axis
+
+      //GPIOA->BSRR = GPIO_BSRR_BR4;  // reset GPIO PA4
     }
-    
   #endif
 }
 
@@ -453,7 +457,12 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
   //--------------------------------------------------------------
 	if (htim->Instance == TIM3) 
   {
-    if(axis_to_run == 0) myAxis_ptr[axis_to_run]->myPos->mt6835_start_read(); // Initiates the request for the next encoder value via SPI and DMA
+    #ifndef USE_FOC
+    if(myAxis_ptr[axis_to_run]->myPos->is_encoder_ready())
+    {
+      myAxis_ptr[axis_to_run]->myPos->mt6835_start_read(); // Initiates the request for the next encoder value via SPI and DMA
+    }
+    #endif
 
     servo_cnt++;  // counter (Servo Loop)
 		

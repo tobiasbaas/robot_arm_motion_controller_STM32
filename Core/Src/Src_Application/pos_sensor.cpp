@@ -5,7 +5,7 @@
 
 pos_sensor_class::pos_sensor_class(void)
 {
-
+    this->encoder_ready = false;
 }
 
 void pos_sensor_class::init(axis_class* Axis_ptr, parameter_class* myParameter_ptr, error_class* myError_ptr, SPI_HandleTypeDef* spi_ptr, GPIO_TypeDef* cs_port, uint16_t cs_pin)
@@ -46,6 +46,7 @@ void pos_sensor_class::init(axis_class* Axis_ptr, parameter_class* myParameter_p
     this->velocity_filtered_1 = 0.0f;
 
     this->data_ready = false;
+    this->encoder_ready = false;
     this->mt6835_init_sample = true;
 
 	//mt6835_init();
@@ -113,6 +114,8 @@ float pos_sensor_class::get_el_position(void)
 bool pos_sensor_class::mt6835_init(void)
 {
     using namespace pos_sensor_const;
+    //this->encoder_ready = true; // true here only for debuging reasons -> remove or set to false
+    this->encoder_ready = false;
     HAL_GPIO_WritePin(mt6835_cs_port, mt6835_cs_pin, GPIO_PIN_SET);
     next_idx = 0;  
     ready_idx = 0;  
@@ -120,7 +123,7 @@ bool pos_sensor_class::mt6835_init(void)
     memset(&mt6835_result, 0, sizeof(mt6835_result));
     stale_cnt = 0;  
 
-    constexpr uint32_t SKIP  = 3;      // die ersten Frames wegwerfen
+    constexpr uint32_t SKIP  = 6;      // die ersten Frames wegwerfen
     constexpr uint32_t N_AVG = 64;
     int32_t  first = 0, dmin = 0, dmax = 0;
     int64_t  sum   = 0;
@@ -154,7 +157,7 @@ bool pos_sensor_class::mt6835_init(void)
         good++;
         HAL_Delay(1);
     }
-    if (dmax - dmin > 300) return false;                      // Rotor bewegt sich noch
+    if (dmax - dmin > 500) return false;                      // Rotor bewegt sich noch
 
     const uint32_t avg = ((uint32_t)(first + (int32_t)(sum / (int64_t)N_AVG))) & MT6835_MASK;
 
@@ -167,6 +170,7 @@ bool pos_sensor_class::mt6835_init(void)
     init_el_angle           = ((uint32_t)(avg_dir * (int32_t)pole_pairs)) & MT6835_MASK; // absolute value measured after alignment
     //el_offset_deg           = (float)el_offset * 360.0f / 2097152.0f;   // public, für den Recorder
     mt6835_init_sample      = false;
+    this->encoder_ready     = true;
     return true;
 
     /*

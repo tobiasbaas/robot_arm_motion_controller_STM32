@@ -50,6 +50,11 @@ void current_control_class::init(axis_class* Axis_ptr, parameter_class* myParame
     this->i_d_set = 0.0;		// setpoint for id current; [A]
     this->i_q_set = 0.0;		// setpoint for iq current; [A]
 
+    this->rec_id_set = 0.0; // for DR
+    this->rec_iq_set = 0.0; // for Data rec
+
+    this->u_d = 0.0;
+    this->u_q = 0.0;
     this->u_alpha = 0.0;		// voltage phase 1/A; [V]
     this->u_beta = 0.0;		// voltage phase 2/B; [V]
 
@@ -174,6 +179,12 @@ float current_control_class::getMechAngle()
 // control loop for FOC and current control
 void current_control_class::currentControlLoop()
 {
+    if (!myAxis->myPos->is_encoder_ready())
+    {
+        i_d_set = 0.0f;
+        i_q_set = 0.0f;
+        return;
+    }
     myAxis->myPos->mt6835_start_read();
 
     if(faultLatched || !myPWM->isDriverEnabled()) return;  
@@ -181,7 +192,8 @@ void current_control_class::currentControlLoop()
     if(checkOvercurrent()) return;  // Overcurrent protection
 
     // Encoder lesen
-    this->phi_el = myAxis->myPos->get_el_position();
+    this->phi_el = 0.0f;    // for test reasons
+    //this->phi_el = myAxis->myPos->get_el_position();
 
     parkTransformation(); // Park-Transformation using this->i_alpha and this->i_beta
 
@@ -190,11 +202,17 @@ void current_control_class::currentControlLoop()
     PIController_iq.pidOut_max = sqrtf(fmaxf(u_lim * u_lim - ud * ud, 0.0f));   // calculates the maximum output for u_d so that the magnitude of the voltage vector does not exceed u_lim
     PIController((this->i_q_set - this->i_q), this->PIController_iq); // PI controller for iq
 
+    this->rec_id_set = i_d_set; // only for DR
+    this->rec_iq_set = i_q_set; // only for DR
+    this->u_d = PIController_id.pidOut; // only for DR
+    this->u_q = PIController_iq.pidOut; // only for DR
+
     inverseParkTransformation(this->PIController_id.pidOut, this->PIController_iq.pidOut); // inverse Park-Transformation
 
-    //myPWM->setPhaseVoltage(0, this->u_alpha);   // set Phase 1/A
-    //myPWM->setPhaseVoltage(1, this->u_beta);   // set Phase 2/B
+    myPWM->setPhaseVoltage(0, this->u_alpha);   // set Phase 1/A
+    myPWM->setPhaseVoltage(1, this->u_beta);   // set Phase 2/B
 
+    //myPWM->setPhaseVoltage(0, 0.6); // only for ADC validation
 }
 
 // setFOC
@@ -343,7 +361,7 @@ void current_control_class::setElectricAngleToZero()
     const float maxVoltage = myPWM->getVoltageLimit();
 
     myPWM->setPhaseVoltage(1, 0.0); // deactivate Phase B
-    myPWM->setPhaseVoltage(0, maxVoltage);  // only Phase A
+    myPWM->setPhaseVoltage(0, maxVoltage * 0.6f);  // only Phase A
 
     return;
 }

@@ -16,7 +16,7 @@ extern ADC_HandleTypeDef hadc4;
 
 namespace current_control_const 
 {
-	constexpr float TS = 1/30000.0f;	// cycle time of the current control loop [s]
+	constexpr float TS = 1/12500.0f;	// cycle time of the current control loop [s]
 };
 
 namespace current_sens
@@ -81,8 +81,8 @@ class current_control_class
 		{
 			{0x01, 		_UINT16, 		MAX_NUM_PARAMETER_CURRENT_CON, 			MAX_NUM_PARAMETER_CURRENT_CON, MAX_NUM_PARAMETER_CURRENT_CON, 		true,		"Number of Parameters in Current Control Module"}, //[0]
 			{0x10, 		_FLOAT, 		{.f32=24.0}, 							0, 48,			false,	"Intermediate Voltage"},	// TODO needed -> remove?
-			{0x20, 		_FLOAT, 		{.f32=4.0}, 							0, 6, 			false,	"Maximum Current"},	// TODO needed -> remove?
-			{0x21, 		_FLOAT, 		{.f32=5.0}, 							0, 6, 			false,	"Peak Current"},	// ODO needed -> remove?; 6A s the maximum current the measurement circuit can measure
+			{0x20, 		_FLOAT, 		{.f32=1.0}, 							0, 6, 			false,	"Maximum Current"},	// TODO needed -> remove?
+			{0x21, 		_FLOAT, 		{.f32=2.0}, 							0, 6, 			false,	"Peak Current"},	// ODO needed -> remove?; 6A s the maximum current the measurement circuit can measure
 			{0x22, 		_UINT16, 		{.ui32=1024}, 							0, UINT_32_MAX, false,	"Number Counts per electrical Pitch"}, // TODO Counts from Encoder?
 			{0x50, 		_FLOAT, 		{.f32=1.0}, 							0, 10000, 		false,	"P-Term FOC D"},							
 			{0x51, 		_FLOAT, 		{.f32=2.0}, 							0, 100, 		false,	"TN (I-Term) FOC D"},	// [ms]
@@ -93,6 +93,18 @@ class current_control_class
 
 		float i_alpha;		// current phase 1/A; [A]
 		float i_beta;		// current phase 2/B; [A]
+
+		float i_d;			// current in the direction of the d-axis; [A]
+		float i_q;			// torque-generating current; [A]
+		volatile float i_d_set;		// setpoint for id current; [A]
+		volatile float i_q_set;		// setpoint for iq current; [A]
+		float rec_id_set;	// for data recorder
+		float rec_iq_set;	// for DR
+
+		float u_d;
+		float u_q;
+		float u_alpha;		// voltage phase 1/A; [V]
+		float u_beta;		// voltage phase 2/B; [V]
 
 		set_pwm_class* myPWM;
 
@@ -106,7 +118,7 @@ class current_control_class
 
 		bool faultLatched;	// true if over current event triggered
 
-		uint8_t ocCount;		// counter for overcurrent detection
+		uint8_t ocCount;	// counter for overcurrent detection
 		float u_lim;		// max voltage per phase, comes from set_pwm_class; [V]
 
 		PI_FOC PIController_id;	// values for PI controller controlling the id current
@@ -117,14 +129,6 @@ class current_control_class
 
 		float sin_phi;		// calculated sine for the given electrical angle
 		float cos_phi;		// calculated cosine for the given electrical angle
-
-		float i_d;			// current in the direction of the d-axis; [A]
-		float i_q;			// torque-generating current; [A]
-		volatile float i_d_set;		// setpoint for id current; [A]
-		volatile float i_q_set;		// setpoint for iq current; [A]
-
-		float u_alpha;		// voltage phase 1/A; [V]
-		float u_beta;		// voltage phase 2/B; [V]
 
 		uint16_t ADC_Offset[4];	// Offsets der ADC Channels bei 0A, also welcher Rohwert wird bei 0A gelesen; Erwarteter Wert 1861 (für +1,5V Offset bei 12Bit)
 

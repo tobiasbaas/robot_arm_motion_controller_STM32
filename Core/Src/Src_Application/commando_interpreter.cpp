@@ -1118,7 +1118,9 @@ COMMAND Start Current Loop Test FOC --> "CLT"
 */
 bool ComInt_class::start_current_test(void)
 {
-	//this->myAxis[this->myCmd.i_instance]->myCurrent_Control->start_current_loop_test();
+	
+	
+
 	send_string("#NOT IMPLEMENTED", true);
     return true;
 }
@@ -1181,4 +1183,18 @@ bool ComInt_class::read_record_table_binary(void)
 {
 	this->myDR->send_data_binary();
     return true;
+}
+
+
+bool ComInt_class::stepResponse()
+{
+	this->myDR->trigger_start(this->myCmd.i_instance, DR_TGR_MOV); // start DR
+	this->myAxis[this->myCmd.i_instance]->myCurrent_Control->updateFOCSetpoints(0.5, 0);
+	return true;
+}
+
+bool ComInt_class::resetStep()
+{
+	this->myAxis[this->myCmd.i_instance]->myCurrent_Control->updateFOCSetpoints(0.0, 0.0);
+	return true;
 }

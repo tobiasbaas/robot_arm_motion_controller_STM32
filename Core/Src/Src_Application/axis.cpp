@@ -93,12 +93,18 @@ bool axis_class::run(void)
 	bool ret = true;
 
 	#ifdef USE_FOC
-		// FOC 
-		// Setpoints für i_d und i_q berrechnen
-		// Trajectorie berrechnen
-		// Positionsregler
-		// ...
-	#else
+		if (this->myPos->is_encoder_ready())
+		{
+			// FOC 
+			// Setpoints für i_d und i_q berrechnen
+			// Trajectorie berrechnen
+			// Positionsregler
+			// ...
+			return ret;
+		}
+		// Encoder-Init fehlgeschlagen -> Open-Loop-Fallback
+	#endif
+
 		// open loop
 		ret = this->myPos->get_el_position(); // just called for data rec. for testing
 		ret = this->myPos->get_stepper_position();
@@ -116,7 +122,6 @@ bool axis_class::run(void)
 			}
 			this->myCurrent_Control->oldCurrentLoop();
 		}
-	#endif
 	
 	return ret;
 }

@@ -49,6 +49,7 @@ class pos_sensor_class
         float get_el_position(void);        // provides the electrical angle within one period
 
         bool mt6835_init(void);             // initialize encoder
+        bool is_encoder_ready(void) const { return this->encoder_ready; }   // true, wenn mt6835_init() erfolgreich war
         // calibrate
         bool mt6835_check_crc(const uint8_t d[MT6835_FRAME_LEN]) const;   // true = Prüfsumme stimmt
         static uint8_t mt6835_crc8(const uint8_t *data, uint32_t len);
@@ -107,6 +108,7 @@ class pos_sensor_class
         volatile uint8_t 	next_idx;   // Puffer, in den der laufende/naechste  Transfer schreibt 
         volatile uint8_t 	ready_idx;  // Puffer mit dem zuletzt fertigen Datensatz 
         volatile bool 		data_ready;
+        volatile bool       encoder_ready;  // true, wenn mt6835_init() erfolgreich war
         uint16_t stale_cnt;
 
         // module parameters
