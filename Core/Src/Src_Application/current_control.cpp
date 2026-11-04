@@ -74,6 +74,11 @@ void current_control_class::init(axis_class* Axis_ptr, parameter_class* myParame
 		this->myParameter->read_eeprom_parameter(&this->module_parameter[0], ADDR_FLASH_A2_CUR_CTL,0);
 	}
 	this->refresh_parameter();
+
+
+    // only for debug and tuning
+    phi_test = 0.0f;    // [rad]
+    omega_test = 5.0f;  // [rad/s elektrisch]
 }
 
 bool current_control_class::setParameter(CMD_STRUCT* cmd)
@@ -192,8 +197,16 @@ void current_control_class::currentControlLoop()
     if(checkOvercurrent()) return;  // Overcurrent protection
 
     // Encoder lesen
-    this->phi_el = 0.0f;    // for test reasons
-    //this->phi_el = myAxis->myPos->get_el_position();
+    //this->phi_el = 0.0f;    // for test reasons (static field)
+
+    /*
+    phi_test += omega_test * current_control_const::TS;
+    if (phi_test >= 6.2831853f) phi_test -= 6.2831853f;
+    else if (phi_test < 0.0f)   phi_test += 6.2831853f;
+    this->phi_el = phi_test; 
+    */
+    
+    this->phi_el = myAxis->myPos->get_el_position();
 
     parkTransformation(); // Park-Transformation using this->i_alpha and this->i_beta
 

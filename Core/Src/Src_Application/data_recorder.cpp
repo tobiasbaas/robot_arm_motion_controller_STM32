@@ -262,6 +262,16 @@ bool data_recorder_class::table_ptr_update(uint16_t id,uint8_t trace)
 		 			sprintf(&this->table_name[trace][0],"FOC Iq_Set - Axis: %d",recInstance);
 		 			break;
 
+		case 20:	// FOC phi el
+					this->rec_table_ptr[trace] = &this->myAxis[recInstance]->myCurrent_Control->phi_el;
+		 			sprintf(&this->table_name[trace][0],"FOC Phi El - Axis: %d",recInstance);
+		 			break;
+
+		//case 21:	// Lastwinkel
+		//			this->rec_table_ptr[trace] = &this->myAxis[recInstance]->myCurrent_Control->phi_delta;
+		//			sprintf(&this->table_name[trace][0],"Load Angle - Axis: %d",recInstance);
+		//			break;
+
 		default:	// no data (0.0)
 					this->rec_table_ptr[trace] = &this->null;
 					sprintf(&this->table_name[trace][0],"NON - Axis: %d",recInstance);

@@ -106,7 +106,12 @@ class current_control_class
 		float u_alpha;		// voltage phase 1/A; [V]
 		float u_beta;		// voltage phase 2/B; [V]
 
+		float phi_el;		// electrical angle rotor; [rad]
 		set_pwm_class* myPWM;
+
+
+		// only for debug and tuning
+		float phi_test, omega_test;       // [rad], [rad/s elektrisch]
 
     private:
 		axis_class* myAxis;
@@ -125,7 +130,7 @@ class current_control_class
 		PI_FOC PIController_iq;	// values for PI controller controlling the iq current
 
 		float phi_mech;		// mechanical angle rotor; [rad]
-		float phi_el;		// electrical angle rotor; [rad]
+		
 
 		float sin_phi;		// calculated sine for the given electrical angle
 		float cos_phi;		// calculated cosine for the given electrical angle

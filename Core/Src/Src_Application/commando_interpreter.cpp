@@ -1189,7 +1189,7 @@ bool ComInt_class::read_record_table_binary(void)
 bool ComInt_class::stepResponse()
 {
 	this->myDR->trigger_start(this->myCmd.i_instance, DR_TGR_MOV); // start DR
-	this->myAxis[this->myCmd.i_instance]->myCurrent_Control->updateFOCSetpoints(0.5, 0);
+	this->myAxis[this->myCmd.i_instance]->myCurrent_Control->updateFOCSetpoints(0.0, 1.0);
 	return true;
 }
 
@@ -1197,4 +1197,42 @@ bool ComInt_class::resetStep()
 {
 	this->myAxis[this->myCmd.i_instance]->myCurrent_Control->updateFOCSetpoints(0.0, 0.0);
 	return true;
+}
+
+bool ComInt_class::setIdSet()
+{
+	bool ret = true;
+	char * p;
+
+	float id_set = strtof(&this->myCmd.argument[2][0], & p);
+	if ( * p != 0 ) { // Address conversion failed
+		ComInt_class::myError->add(COMMAND_MOD, ERR_UNKNOWN_MOD_ID, __FILE__, __LINE__); // 	{8, "Unknown Parameter ID"
+		send_string("#ERROR: Invalid target position", true);
+		ret = false;
+	}
+	else
+	{
+		this->myAxis[this->myCmd.i_instance]->myCurrent_Control->updateFOCSetpoints(id_set, 0.0);
+
+	}
+    return ret;
+}
+
+bool ComInt_class::setIqSet()
+{
+	bool ret = true;
+	char * p;
+
+	float iq_set = strtof(&this->myCmd.argument[2][0], & p);
+	if ( * p != 0 ) { // Address conversion failed
+		ComInt_class::myError->add(COMMAND_MOD, ERR_UNKNOWN_MOD_ID, __FILE__, __LINE__); // 	{8, "Unknown Parameter ID"
+		send_string("#ERROR: Invalid target position", true);
+		ret = false;
+	}
+	else
+	{
+		this->myAxis[this->myCmd.i_instance]->myCurrent_Control->updateFOCSetpoints(0.0, iq_set);
+	}
+
+    return ret;
 }

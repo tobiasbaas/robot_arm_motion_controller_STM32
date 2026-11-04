@@ -432,6 +432,8 @@ void HAL_ADCEx_InjectedConvCpltCallback(ADC_HandleTypeDef* hadc)
       myAxis_ptr[cc_axis]->myCurrent_Control->currentControlLoop();
       cc_axis = (cc_axis + 1) % MAX_NUM_AXIS;  // jump axis
 
+      //myDR_ptr->run();  //Data Recorder only for debug
+
       //GPIOA->BSRR = GPIO_BSRR_BR4;  // reset GPIO PA4
     }
   #endif
