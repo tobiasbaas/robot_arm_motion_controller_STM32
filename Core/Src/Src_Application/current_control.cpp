@@ -78,7 +78,9 @@ void current_control_class::init(axis_class* Axis_ptr, parameter_class* myParame
 
     // only for debug and tuning
     phi_test = 0.0f;    // [rad]
-    omega_test = 5.0f;  // [rad/s elektrisch]
+    omega_test = -5.0f;  // [rad/s elektrisch]
+
+    load_angle = 0.0f;  // test
 }
 
 bool current_control_class::setParameter(CMD_STRUCT* cmd)
@@ -200,13 +202,19 @@ void current_control_class::currentControlLoop()
     //this->phi_el = 0.0f;    // for test reasons (static field)
 
     /*
+    // Test angle
     phi_test += omega_test * current_control_const::TS;
     if (phi_test >= 6.2831853f) phi_test -= 6.2831853f;
     else if (phi_test < 0.0f)   phi_test += 6.2831853f;
     this->phi_el = phi_test; 
-    */
     
-    this->phi_el = myAxis->myPos->get_el_position();
+    this->load_angle = myAxis->myPos->get_el_position() - phi_el;
+    */
+
+    //this->phi_el = myAxis->myPos->get_el_position();
+    phi_el = myAxis->myPos->get_el_position() + 90.0f;   // +phi_trimnur zum Test
+    if (phi_el >= 6.2831853f) phi_el -= 6.2831853f;
+    else if (phi_el < 0.0f)   phi_el += 6.2831853f;
 
     parkTransformation(); // Park-Transformation using this->i_alpha and this->i_beta
 
@@ -250,6 +258,7 @@ void current_control_class::readADC(void)
 
     if(myPWM->isDriverEnabled())
     {
+        /*
         myPWM->isPhaseCurrentNegative(0, signPhase1);   // get sign
         myPWM->isPhaseCurrentNegative(1, signPhase2);   // get sign
 
@@ -272,6 +281,15 @@ void current_control_class::readADC(void)
         {
             this->i_beta = -rawToAmps(HAL_ADCEx_InjectedGetValue(myADC, ADC_INJECTED_RANK_3), this->ADC_Offset[2]); // Shunt C; Rank 3
         }
+        */
+
+        const float a = rawToAmps(HAL_ADCEx_InjectedGetValue(myADC, ADC_INJECTED_RANK_1), ADC_Offset[0]);
+        const float b = rawToAmps(HAL_ADCEx_InjectedGetValue(myADC, ADC_INJECTED_RANK_2), ADC_Offset[1]);
+        const float c = rawToAmps(HAL_ADCEx_InjectedGetValue(myADC, ADC_INJECTED_RANK_3), ADC_Offset[2]);
+        const float d = rawToAmps(HAL_ADCEx_InjectedGetValue(myADC, ADC_INJECTED_RANK_4), ADC_Offset[3]);
+
+        i_alpha = 0.5f * (b - a);      // kein isPhaseCurrentNegative() mehr nötig
+        i_beta  = 0.5f * (d - c);
     }
     else 
     {

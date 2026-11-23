@@ -167,7 +167,8 @@ bool pos_sensor_class::mt6835_init(void)
     mt6835_result.angle_el  = 0.0f;
     abs_offset              = 0;                                // später per Parameter
     const int32_t avg_dir   = (int32_t)avg * (int32_t)this->dir;
-    init_el_angle           = ((uint32_t)(avg_dir * (int32_t)pole_pairs)) & MT6835_MASK; // absolute value measured after alignment
+    init_el_angle           = ((uint32_t)(avg_dir * (int32_t)pole_pairs)); // absolute value measured after alignment
+    init_el_angle           += ((uint32_t)(1.603528f / RAD_PER_TICK_EL)) & MT6835_MASK;  // value is a calculated offset error
     //el_offset_deg           = (float)el_offset * 360.0f / 2097152.0f;   // public, für den Recorder
     mt6835_init_sample      = false;
     this->encoder_ready     = true;

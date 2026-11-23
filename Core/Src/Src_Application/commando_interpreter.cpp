@@ -1236,3 +1236,16 @@ bool ComInt_class::setIqSet()
 
     return ret;
 }
+
+bool ComInt_class::getFaultLatch()
+{
+	if(myAxis[myCmd.i_instance]->myCurrent_Control->isFaultLatched())
+	{
+		send_string("fault latch = true", true);
+	}
+	else 
+	{
+		send_string("fault latch = false", true);
+	}
+    return true;
+}

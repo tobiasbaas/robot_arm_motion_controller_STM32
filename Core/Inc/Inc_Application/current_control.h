@@ -112,6 +112,7 @@ class current_control_class
 
 		// only for debug and tuning
 		float phi_test, omega_test;       // [rad], [rad/s elektrisch]
+		float load_angle;
 
     private:
 		axis_class* myAxis;

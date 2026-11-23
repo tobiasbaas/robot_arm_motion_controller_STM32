@@ -65,7 +65,7 @@ class ComInt_class
     
         // MÜSSEN APHABETISCH SORTIERT SEIN!!!!!!!
         // CMD-String, command function pinter, description
-        #define MAX_NUM_COMANDS 30
+        #define MAX_NUM_COMANDS 31
         const CMDTAB cmd_tab[MAX_NUM_COMANDS] = 
         {
         	{"APD", &ComInt_class::find_phase, 			"Auto Phase Angle Detection"},
@@ -97,7 +97,8 @@ class ComInt_class
             {"PIC", &ComInt_class::stepResponse, "Get step response"},
             {"PIR", &ComInt_class::resetStep, "Reset step from step response"},
             {"IDS", &ComInt_class::setIdSet, "Set Id setpoint"},
-            {"IQS", &ComInt_class::setIqSet, "Set Iq setpoint"}
+            {"IQS", &ComInt_class::setIqSet, "Set Iq setpoint"},
+            {"GFL", &ComInt_class::getFaultLatch, "Get Fault Latch"}
             
         };
 
@@ -146,6 +147,7 @@ class ComInt_class
         bool resetStep();
         bool setIdSet();
         bool setIqSet();
+        bool getFaultLatch();
 
 };
 

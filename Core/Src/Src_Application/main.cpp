@@ -282,7 +282,7 @@ int main(void)
   for(uint8_t i=0;i<MAX_NUM_AXIS;i++)
   {
     myAxis_ptr[i]->myCurrent_Control->setAllCurrentsToZero(); // PWM auf LOW
-    HAL_Delay(20);
+    HAL_Delay(200);
     if(i == 0)
     {
       myAxis_ptr[i]->myCurrent_Control->calibrateADC_Offsets(&hadc1);

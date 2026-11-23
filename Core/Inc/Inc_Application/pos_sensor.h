@@ -85,9 +85,9 @@ class pos_sensor_class
         float		velocity_filtered_1;	// velocity filtered; n-1
 
         mt6835_result_t mt6835_result;	    // latest encoder readings
-        float angle_raw_float;  // to be able to record raw angle with data recorder
+        float           angle_raw_float;    // to be able to record raw angle with data recorder
 
-        volatile uint32_t crc_err_cnt;     // Anzahl wegen CRC-Fehler verworfener Frames
+        volatile uint32_t crc_err_cnt;      // Anzahl wegen CRC-Fehler verworfener Frames
         //volatile uint32_t spi_err_cnt;     // Anzahl fehlgeschlagener SPI-Starts / SPI-Fehler
 
         uint8_t dbg_init_frame[6], dbg_first_frame[6]; bool dbg_first_taken;
@@ -102,26 +102,26 @@ class pos_sensor_class
         uint16_t			mt6835_cs_pin;
 
         //mt6835 -- Buffer per axis (each axis has its own encoder/SPI)
-        uint8_t				tx_buf[MT6835_FRAME_LEN];   // contains the SPI command for reading the absolute value
-        uint8_t				rx_buf[2][MT6835_FRAME_LEN]; // Ping-pong RX buffer: one is filled by the DMA, whilst the other can be read
+        uint8_t				tx_buf[MT6835_FRAME_LEN];       // contains the SPI command for reading the absolute value
+        uint8_t				rx_buf[2][MT6835_FRAME_LEN];    // Ping-pong RX buffer: one is filled by the DMA, whilst the other can be read
 
-        volatile uint8_t 	next_idx;   // Puffer, in den der laufende/naechste  Transfer schreibt 
-        volatile uint8_t 	ready_idx;  // Puffer mit dem zuletzt fertigen Datensatz 
+        volatile uint8_t 	next_idx;       // Puffer, in den der laufende/naechste  Transfer schreibt 
+        volatile uint8_t 	ready_idx;      // Puffer mit dem zuletzt fertigen Datensatz 
         volatile bool 		data_ready;
         volatile bool       encoder_ready;  // true, wenn mt6835_init() erfolgreich war
-        uint16_t stale_cnt;
+        uint16_t            stale_cnt;
 
         // module parameters
-        uint32_t	numerator;              // * 2Pi / denominator = scaling factor that indicates how many radians the axis (not the motor) rotates per encoder step
-        uint32_t 	denominator;            // 
-        volatile int32_t abs_offset;             // Offset for absolute zero position in [raw ticks]
+        uint32_t	        numerator;              // * 2Pi / denominator = scaling factor that indicates how many radians the axis (not the motor) rotates per encoder step
+        uint32_t 	        denominator;            // 
+        volatile int32_t    abs_offset;             // Offset for absolute zero position in [raw ticks]
 
-        uint32_t    init_el_angle;              // value for which the electrical angle is 0
+        uint32_t            init_el_angle;          // value for which the electrical angle is 0
 
-        uint32_t pole_pairs;
-        int8_t      dir;                    // Encoder-Zaehlrichtung: +1/-1 (FOC-positive Richtung)
-        volatile float  pos_scale;              // mech winkel [rad Abtrieb pro Tick]
+        uint32_t            pole_pairs;
+        int8_t              dir;                    // Encoder-Zaehlrichtung: +1/-1 (FOC-positive Richtung)
+        volatile float      pos_scale;              // mech winkel [rad Abtrieb pro Tick]
 
-        bool mt6835_init_sample;            // important for the (first) initial measurement
-        uint32_t mt6835_last_raw_ticks;      // saves the last raw value to handle wrap-around
+        bool                mt6835_init_sample;     // important for the (first) initial measurement
+        uint32_t            mt6835_last_raw_ticks;  // saves the last raw value to handle wrap-around
 };
