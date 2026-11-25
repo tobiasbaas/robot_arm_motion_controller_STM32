@@ -183,15 +183,15 @@ bool data_recorder_class::table_ptr_update(uint16_t id,uint8_t trace)
 					sprintf(&this->table_name[trace][0],"NON - Axis: %d",recInstance);
 					break;
 		case 1:		// Actual Position
-					this->rec_table_ptr[trace] = &this->myAxis[recInstance]->myPos->mech_position;
+					this->rec_table_ptr[trace] = &this->myAxis[recInstance]->myPos->mt6835_result.angle_rad;
 					sprintf(&this->table_name[trace][0],"Position - Axis: %d",recInstance);
 					break;
 		case 2:		// slowed Target
-					this->rec_table_ptr[trace] = &this->myAxis[recInstance]->myTrajectory->slowed_target;
+					this->rec_table_ptr[trace] = &this->myAxis[recInstance]->theta_ref;
 					sprintf(&this->table_name[trace][0],"Slowed Target - Axis: %d",recInstance);
 					break;
 		case 3:		// Position Error
-					this->rec_table_ptr[trace] = &this->myAxis[recInstance]->myPid_Pos->error;
+					this->rec_table_ptr[trace] = &this->myAxis[recInstance]->lag;
 					sprintf(&this->table_name[trace][0],"Position Error - Axis: %d",recInstance);
 					break;
 		case 4:		// Setpoint
@@ -199,11 +199,11 @@ bool data_recorder_class::table_ptr_update(uint16_t id,uint8_t trace)
 					sprintf(&this->table_name[trace][0],"Setpoint - Axis: %d",recInstance);
 					break;
 		case 5:		// Control out
-					this->rec_table_ptr[trace] = &this->myAxis[recInstance]->myPid_Pos->pid_y;
+					this->rec_table_ptr[trace] = &this->myAxis[recInstance]->myCurrent_Control->rec_iq_set;
 					sprintf(&this->table_name[trace][0],"Control Out - Axis: %d",recInstance);
 					break;
 		case 6:		// Velocity
-					this->rec_table_ptr[trace] = &this->myAxis[recInstance]->myTrajectory->vel;
+					this->rec_table_ptr[trace] = &this->myAxis[recInstance]->myPos->mt6835_result.speed;
 					sprintf(&this->table_name[trace][0],"Velocity - Axis: %d",recInstance);
 					break;
 		case 7:		// Acceleration

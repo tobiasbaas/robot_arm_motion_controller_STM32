@@ -28,7 +28,16 @@ class trajectory_class;
 class data_recorder_class;
 class current_control_class;
 
-class axis_class
+namespace axis_const
+{
+	constexpr float V_SOLL_DEFAULT = 5.0f;    // [rad/s] Standard-Solldrehzahl, mechanisch
+    constexpr float V_SOLL_MAX     = 20.0f;   // [rad/s] Sicherheits-Clamp
+    constexpr float LEAD_MAX = 0.1745f;    // [rad]  maximaler Vorhalt (ca. 10°)
+   // constexpr float kp_iq    = 8.6f;     // [A/rad] (= 0,15 A/° der Vergleichsimplementierung)
+    constexpr float IQ_MAX   = 1.5f;     // [A]
+};
+
+class axis_class    
 {
     public:
         axis_class();
@@ -52,11 +61,13 @@ class axis_class
         data_recorder_class*		myDR;
         bool						enabled;	// enable axis to run Motor...
 
-        #define MAX_NUM_PARAMETER_AXIS 1
+        #define MAX_NUM_PARAMETER_AXIS_MOD 3
         // parameter TYPES: _UINT64, _UINT32, _UINT16, _INT64, _INT32, _INT16, _FLOAT, _DOUBLE, _STRING, _BOOL, _INIT
-        PARAM_DEV module_parameter[MAX_NUM_PARAMETER_AXIS] =
+        PARAM_DEV module_parameter[MAX_NUM_PARAMETER_AXIS_MOD] =
         {
-            {0x01, _UINT16, 	MAX_NUM_PARAMETER_AXIS, 0, 0, true, "Number of Axis Module Parameters"}, // every Module needs this parameter with number of
+            {0x01, _UINT16, 	MAX_NUM_PARAMETER_AXIS_MOD, 0, 0, true, "Number of Axis Module Parameters"}, // every Module needs this parameter with number of
+            {0x21, _FLOAT, {.f32=8.6}, 0, 15, false, "P-Term for Positioncontrol"}, 
+            {0x22, _FLOAT, {.f32=axis_const::V_SOLL_DEFAULT}, -20, 20, false, "Ramp Velocity [rad/s]"},
         };
 
         //float position;
@@ -65,9 +76,15 @@ class axis_class
         //float pos_travel_limit;			// positive travel limit
         //float neg_travel_limit;			// negative travel limit
 
-    private:
-        /* data */
+        float theta_ref;    // für Winkelsollwertrampe
+        float lag;          // Lastwinkel
+        float kp_iq;        // P-Term für Positionsregler
+        float v_soll;       // Rampen-/Solldrehzahl [rad/s], vorzeichenbehaftet
 
+        bool firstLoop;
+
+    private:
+        /* data */      
 };
 
 #endif

@@ -9,6 +9,7 @@
 *****************************************************************************/
 
 #include "axis.h"
+#include <cmath>
 
 axis_class::axis_class()
 {
@@ -19,6 +20,7 @@ axis_class::axis_class()
 	 axis_class::myPid_Pos			= NULL;
 	 axis_class::myCurrent_Control	= NULL;
 	 axis_class::enabled			= false;
+	 axis_class::v_soll				= axis_const::V_SOLL_DEFAULT;
 	 //axis_class::position			= 0;
 }
 
@@ -35,17 +37,23 @@ bool axis_class::init(uint8_t i, error_class* myError, trajectory_class* traject
 
 	// get ADC Offset
 	
+	theta_ref = 0.0f;
+	lag = 0.0f;
+	firstLoop = true;
+
+	this->refresh_parameter();	// P-Term (kp_iq) aus Default/Parameter uebernehmen
 
 	return true;
 }
 
 bool axis_class::setParameter(CMD_STRUCT* cmd)
 {
-	bool ret;
+	bool ret = false;
 
 	if(this->enabled == false)
 	{
 		ret = this->myParameter->setParameter(cmd, &this->module_parameter[0]);
+		this->refresh_parameter();
 	}
 	else
 	{
@@ -63,6 +71,14 @@ bool axis_class::refresh_parameter(void)
 	if(this->enabled == false)
 	{
 		// General
+		kp_iq = this->module_parameter[1].value.f32;
+
+		float v = this->module_parameter[2].value.f32;
+		if(!std::isfinite(v)) v = axis_const::V_SOLL_DEFAULT;
+		if(v >  axis_const::V_SOLL_MAX) v =  axis_const::V_SOLL_MAX;
+		if(v < -axis_const::V_SOLL_MAX) v = -axis_const::V_SOLL_MAX;
+		this->v_soll = v;
+		this->module_parameter[2].value.f32 = v;
 	}
 	else
 	{
@@ -78,6 +94,9 @@ void axis_class::enable(void)
 
 	this->myTrajectory->motion_init();					// initialize trajectory variables for standstill
 	this->myPid_Pos->servo_on = false;					// set servo off
+
+	this->lag = 0.0f;
+	this->firstLoop = true;								// Rampe beim naechsten Einschalten auf Istposition setzen
 }
 
 void axis_class::disable(void)
@@ -86,6 +105,13 @@ void axis_class::disable(void)
 
 	this->myTrajectory->motion_init();					// set trajectory variables for standstill
 	this->myPid_Pos->servo_on = false;					// set servo off
+
+	if(this->myCurrent_Control != NULL)
+	{
+		this->myCurrent_Control->updateFOCSetpoints(0.0f, 0.0f);	// Strom-Sollwert sicher auf 0
+	}
+	this->lag = 0.0f;
+	this->firstLoop = true;
 }
 
 bool axis_class::run(void)
@@ -100,6 +126,38 @@ bool axis_class::run(void)
 			// Trajectorie berrechnen
 			// Positionsregler
 			// ...
+
+			const float mech_position = myPos->mt6835_result.angle_rad;
+
+			if((this->enabled == true) && (this->myPid_Pos->servo_on == true))
+			{
+				if(firstLoop)								// Rampe beim Einschalten auf Istposition synchronisieren
+				{
+					theta_ref = mech_position;
+					firstLoop = false;
+				}
+
+				theta_ref += this->v_soll * SERVO_AXIS_TIME;                         // 1. Rampe für Sollwert
+				lag = theta_ref - mech_position;            // 2. Vorhalt begrenzen
+				if (lag >  axis_const::LEAD_MAX) lag =  axis_const::LEAD_MAX;
+				if (lag < -axis_const::LEAD_MAX) lag = -axis_const::LEAD_MAX;
+				theta_ref = mech_position + lag;
+
+				// P-Regler
+				float iq_set = kp_iq * lag;                           // 3. P-Regler (kein "*-1", siehe unten)
+				if (iq_set >  axis_const::IQ_MAX) iq_set =  axis_const::IQ_MAX;
+				if (iq_set < -axis_const::IQ_MAX) iq_set = -axis_const::IQ_MAX;
+
+				myCurrent_Control->updateFOCSetpoints(0.0f, iq_set);
+			}
+			else if(firstLoop == false)						// gerade von aktiv -> inaktiv gewechselt
+			{
+				// Strom-Sollwert sicher auf 0, Rampe fuer naechstes Einschalten neu synchronisieren
+				myCurrent_Control->updateFOCSetpoints(0.05f, 0.0f);
+				lag = 0.0f;
+				firstLoop = true;
+			}
+
 			return ret;
 		}
 		// Encoder-Init fehlgeschlagen -> Open-Loop-Fallback

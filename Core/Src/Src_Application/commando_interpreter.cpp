@@ -1212,7 +1212,7 @@ bool ComInt_class::setIdSet()
 	}
 	else
 	{
-		this->myAxis[this->myCmd.i_instance]->myCurrent_Control->updateFOCSetpoints(id_set, 0.0);
+		this->myAxis[this->myCmd.i_instance]->myCurrent_Control->updateFOCSetpoints(id_set, this->myAxis[this->myCmd.i_instance]->myCurrent_Control->i_q_set);
 
 	}
     return ret;
@@ -1231,7 +1231,7 @@ bool ComInt_class::setIqSet()
 	}
 	else
 	{
-		this->myAxis[this->myCmd.i_instance]->myCurrent_Control->updateFOCSetpoints(0.0, iq_set);
+		this->myAxis[this->myCmd.i_instance]->myCurrent_Control->updateFOCSetpoints(this->myAxis[this->myCmd.i_instance]->myCurrent_Control->i_d_set, iq_set);
 	}
 
     return ret;

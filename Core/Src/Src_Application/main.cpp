@@ -257,11 +257,11 @@ int main(void)
 
   // enable Axis 
   myAxis[0].enabled = true;
-  myPID_pos_ptr[0]->servo_on_off(true);
+  myPID_pos_ptr[0]->servo_on_off(false);
 
   #if AXIS1_ENABLED
   myAxis[1].enabled = true;
-  myPID_pos_ptr[1]->servo_on_off(true);
+  myPID_pos_ptr[1]->servo_on_off(false);
   #endif
 
   

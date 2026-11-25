@@ -26,7 +26,7 @@ void current_control_class::init(axis_class* Axis_ptr, parameter_class* myParame
 
     this->ocCount = 0;
 
-    this->u_lim = myPWM->getVoltageLimit();
+    this->u_lim = myPWM->getFOCVoltageLimit();
 
     this->PIController_id.error = 0.0;
     this->PIController_id.error_mem = 0.0;
@@ -210,17 +210,18 @@ void current_control_class::currentControlLoop()
     
     this->load_angle = myAxis->myPos->get_el_position() - phi_el;
     */
-
+    
     //this->phi_el = myAxis->myPos->get_el_position();
-    phi_el = myAxis->myPos->get_el_position() + 90.0f;   // +phi_trimnur zum Test
+    phi_el = myAxis->myPos->get_el_position();  
     if (phi_el >= 6.2831853f) phi_el -= 6.2831853f;
     else if (phi_el < 0.0f)   phi_el += 6.2831853f;
+    
 
     parkTransformation(); // Park-Transformation using this->i_alpha and this->i_beta
 
     PIController((this->i_d_set - this->i_d), this->PIController_id); // PI controller for id; uses u_lim as maximum, as id is regulated to 0 and u_d is therefore relatively small
     const float ud = PIController_id.pidOut;
-    PIController_iq.pidOut_max = sqrtf(fmaxf(u_lim * u_lim - ud * ud, 0.0f));   // calculates the maximum output for u_d so that the magnitude of the voltage vector does not exceed u_lim
+    PIController_iq.pidOut_max = sqrtf(fmaxf(u_lim * u_lim - ud * ud, 0.0f));   // calculates the maximum output for u_q so that the magnitude of the voltage vector does not exceed u_lim
     PIController((this->i_q_set - this->i_q), this->PIController_iq); // PI controller for iq
 
     this->rec_id_set = i_d_set; // only for DR
@@ -230,8 +231,8 @@ void current_control_class::currentControlLoop()
 
     inverseParkTransformation(this->PIController_id.pidOut, this->PIController_iq.pidOut); // inverse Park-Transformation
 
-    myPWM->setPhaseVoltage(0, this->u_alpha);   // set Phase 1/A
-    myPWM->setPhaseVoltage(1, this->u_beta);   // set Phase 2/B
+    myPWM->setFOCPhaseVoltage(0, this->u_alpha);   // set Phase 1/A
+    myPWM->setFOCPhaseVoltage(1, this->u_beta);   // set Phase 2/B
 
     //myPWM->setPhaseVoltage(0, 0.6); // only for ADC validation
 }

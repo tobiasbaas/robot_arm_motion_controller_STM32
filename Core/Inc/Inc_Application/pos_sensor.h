@@ -25,12 +25,17 @@ namespace pos_sensor_const{
     // 625 U/s und liegt damit deutlich ueber jeder realen Motordrehzahl.
     // Groessere Spruenge werden als Fehlerframe verworfen.
     constexpr int32_t  MT6835_MAX_DELTA = 131072;                    // 2^17
+
+    constexpr float SAMPLE_TS = 1.0f / 11800.0f;  // Zeit zwischen zwei Samples [s], für Berechnung der Geschwindigkeit
+
+    constexpr float EL_OFFSET_CORR_RAD = 0.0f;   // Offsetfehler
 };
 
 typedef struct {
     int32_t   angle_raw;   	// absoluter mechanischer Winkel in [ticks]
     float     angle_rad;   	// absoluter mechanischer Winkel in Bezug auf ein Festgelegten 0 Punkt; -lim bis + lim in [rad]
-	float 	  angle_el;	    // elektrischer Winkel auf 0..2Pi normiert; [rad]		
+	float 	  angle_el;	    // elektrischer Winkel auf 0..2Pi normiert; [rad]	
+    float     speed;        // geschwindigkeit in [rad/s], gefiltert	
     uint8_t   status;      	// STATUS[2:0]: Bit0=Overspeed, Bit1=Weak Field, Bit2=Undervoltage 
     uint8_t   crc;         	// empfangene CRC[7:0]; wird gegen mt6835_crc8() geprueft
 } mt6835_result_t;

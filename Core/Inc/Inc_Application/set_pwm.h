@@ -7,6 +7,7 @@
 
 namespace pwm_const{
     constexpr int32_t DUTY_LIMIT = 100; // subtracted from the maximum value (ARR) of the PWM to get a maximum duty of < 1
+    constexpr float FOC_MAX_VOLTAGE_FACTOR = 0.8f;
 };
 
 extern TIM_HandleTypeDef htim1;
@@ -24,17 +25,22 @@ class set_pwm_class{
 		void disableDriver(void);   // to disable motor driver (DRV8412)
 		
         bool setPhaseVoltage(uint8_t phase, float voltage); // set voltage for given phase
+        bool setFOCPhaseVoltage(uint8_t phase, float voltage); // set voltage for FOC with separate limit
         bool isPhaseCurrentNegative(bool phase, bool &phaseSign);   // phaseSign false -> sign is '+'; pahseSign true -> sign is '-' 
         float getVoltageLimit() const;
+        float getFOCVoltageLimit() const;
 
         bool isDriverEnabled();
         
     private:
+        bool setPhaseVoltageInternal(uint8_t phase, float voltage, float maxVoltage);
+
         bool myInstance; // which axis instance is controlled
 
         TIM_HandleTypeDef* my_htim; // timer used for PWM
 
         float myMaxVoltage;   // max. voltage in [V]
+        float myFOCMaxVoltage; // max. voltage for FOC in [V]
 
         bool driverEnabled;
         bool myPhase1_isNegative;

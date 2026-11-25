@@ -165,10 +165,13 @@ bool pos_sensor_class::mt6835_init(void)
     mt6835_result.angle_raw = 0;                                // Startposition = Nullposition
     mt6835_result.angle_rad = 0.0f;
     mt6835_result.angle_el  = 0.0f;
+    mt6835_result.speed     = 0.0f;
     abs_offset              = 0;                                // später per Parameter
-    const int32_t avg_dir   = (int32_t)avg * (int32_t)this->dir;
-    init_el_angle           = ((uint32_t)(avg_dir * (int32_t)pole_pairs)); // absolute value measured after alignment
-    init_el_angle           += ((uint32_t)(1.603528f / RAD_PER_TICK_EL)) & MT6835_MASK;  // value is a calculated offset error
+
+    const int32_t avg_dir = (int32_t)avg * (int32_t)this->dir;
+    init_el_angle  = ((uint32_t)(avg_dir * (int32_t)pole_pairs)); // nach Alignment gemessen
+    init_el_angle += ((uint32_t)(int32_t)(pos_sensor_const::EL_OFFSET_CORR_RAD / RAD_PER_TICK_EL)) & MT6835_MASK;
+
     //el_offset_deg           = (float)el_offset * 360.0f / 2097152.0f;   // public, für den Recorder
     mt6835_init_sample      = false;
     this->encoder_ready     = true;
@@ -286,6 +289,10 @@ void pos_sensor_class::mt6835_get_last_result(void)
 
     // raw angle
     mt6835_result.angle_raw += delta;
+
+    // speed
+    const float v_raw = (float)delta * pos_scale / pos_sensor_const::SAMPLE_TS;      // [rad/s]
+    mt6835_result.speed     += 0.05f * (v_raw - mt6835_result.speed);   // Tiefpass, Zeitkonstante ca. 20 Samples
 
     // absolute angle [rad]
     mt6835_result.angle_rad = (float)(mt6835_result.angle_raw - abs_offset) * pos_scale;

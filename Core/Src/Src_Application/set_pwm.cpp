@@ -9,6 +9,7 @@ set_pwm_class::set_pwm_class()
     myInstance = 0;
     my_htim = &htim1;
     myMaxVoltage = 0;
+    myFOCMaxVoltage = 0;
     driverEnabled = false;
     myPhase1_isNegative = false;
     myPhase2_isNegative = false;
@@ -32,6 +33,8 @@ void set_pwm_class::init(bool instance)
     {
         // TODO Error here
     }
+
+    myFOCMaxVoltage = pwm_const::FOC_MAX_VOLTAGE_FACTOR * BOARD_VCC;
 
     //startPWM();
     setDriverMode();
@@ -123,13 +126,23 @@ void set_pwm_class::disableDriver(void)
 
 bool set_pwm_class::setPhaseVoltage(uint8_t phase, float voltage)
 {
+    return setPhaseVoltageInternal(phase, voltage, myMaxVoltage);
+}
+
+bool set_pwm_class::setFOCPhaseVoltage(uint8_t phase, float voltage)
+{
+    return setPhaseVoltageInternal(phase, voltage, myFOCMaxVoltage);
+}
+
+bool set_pwm_class::setPhaseVoltageInternal(uint8_t phase, float voltage, float maxVoltage)
+{
     float pwmMax = (float)__HAL_TIM_GET_AUTORELOAD(my_htim);   // e.g. 3400 for 25 kHz
     const float pwmScale = pwmMax / BOARD_VCC;
 
     bool isNegative = (voltage < 0.0f);   // get sign
     voltage = fabsf(voltage); // remove sign
 
-    if(voltage > myMaxVoltage) voltage = myMaxVoltage;  // clamp voltage for voltage limitation
+    if(voltage > maxVoltage) voltage = maxVoltage;  // clamp voltage for voltage limitation
 
     int32_t duty = (int32_t)(voltage * pwmScale);  // calc duty cycle for pwm
 
@@ -200,6 +213,13 @@ float set_pwm_class::getVoltageLimit() const
     const float arr   = (float)__HAL_TIM_GET_AUTORELOAD(my_htim);
     const float u_dty = BOARD_VCC * (arr - pwm_const::DUTY_LIMIT) / arr;   // max Voltage at max duty
     return fminf(myMaxVoltage, u_dty);
+}
+
+float set_pwm_class::getFOCVoltageLimit() const
+{
+    const float arr   = (float)__HAL_TIM_GET_AUTORELOAD(my_htim);
+    const float u_dty = BOARD_VCC * (arr - pwm_const::DUTY_LIMIT) / arr;   // max Voltage at max duty
+    return fminf(myFOCMaxVoltage, u_dty);
 }
 
 bool set_pwm_class::isDriverEnabled()
