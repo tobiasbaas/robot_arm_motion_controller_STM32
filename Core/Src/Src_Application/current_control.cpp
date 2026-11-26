@@ -78,7 +78,7 @@ void current_control_class::init(axis_class* Axis_ptr, parameter_class* myParame
 
     // only for debug and tuning
     phi_test = 0.0f;    // [rad]
-    omega_test = -5.0f;  // [rad/s elektrisch]
+    omega_test = -150.0f;  // [rad/s elektrisch]
 
     load_angle = 0.0f;  // test
 }
@@ -198,8 +198,8 @@ void current_control_class::currentControlLoop()
     readADC();
     if(checkOvercurrent()) return;  // Overcurrent protection
 
-    // Encoder lesen
-    //this->phi_el = 0.0f;    // for test reasons (static field)
+
+    this->phi_el =  0.0f;    // for test reasons (static field)
 
     /*
     // Test angle
@@ -207,15 +207,16 @@ void current_control_class::currentControlLoop()
     if (phi_test >= 6.2831853f) phi_test -= 6.2831853f;
     else if (phi_test < 0.0f)   phi_test += 6.2831853f;
     this->phi_el = phi_test; 
-    
+  
     this->load_angle = myAxis->myPos->get_el_position() - phi_el;
-    */
-    
+    /*
+
+    /*
     //this->phi_el = myAxis->myPos->get_el_position();
     phi_el = myAxis->myPos->get_el_position();  
     if (phi_el >= 6.2831853f) phi_el -= 6.2831853f;
     else if (phi_el < 0.0f)   phi_el += 6.2831853f;
-    
+    */
 
     parkTransformation(); // Park-Transformation using this->i_alpha and this->i_beta
 

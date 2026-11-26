@@ -187,7 +187,8 @@ bool data_recorder_class::table_ptr_update(uint16_t id,uint8_t trace)
 					sprintf(&this->table_name[trace][0],"Position - Axis: %d",recInstance);
 					break;
 		case 2:		// slowed Target
-					this->rec_table_ptr[trace] = &this->myAxis[recInstance]->theta_ref;
+					//this->rec_table_ptr[trace] = &this->myAxis[recInstance]->theta_ref;
+					this->rec_table_ptr[trace] = &this->myAxis[recInstance]->myTrajectory->slowed_target;
 					sprintf(&this->table_name[trace][0],"Slowed Target - Axis: %d",recInstance);
 					break;
 		case 3:		// Position Error

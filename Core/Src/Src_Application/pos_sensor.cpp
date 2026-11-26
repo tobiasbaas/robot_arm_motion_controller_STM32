@@ -96,7 +96,7 @@ bool pos_sensor_class::refresh_parameter(void)
 bool pos_sensor_class::get_stepper_position(void)
 {
 	this->mech_position = myAxis->myCurrent_Control->getMechAngle(); //in Rad
-	this->velocity = (this->mech_position - this->mech_position_1) * SERVO_FRQ;
+	this->velocity = (this->mech_position - this->mech_position_1) * SERVO_AXIS_FRQ;
 	this->velocity_filtered_1 = this->velocity_filtered;
 	this->velocity_filtered = 0.98f *this->velocity_filtered_1 + 0.02f * this->velocity;
 	this->mech_position_1 = this->mech_position;

@@ -924,7 +924,7 @@ bool ComInt_class::qPOS(void)
 	}
 	else
 	{
-		sprintf(str,"%4.5f",this->myAxis[this->myCmd.i_instance]->myPos->get_stepper_position());
+		sprintf(str,"%4.5f",this->myAxis[this->myCmd.i_instance]->myPos->mech_position);
 		send_string(str,true);
 	}
 

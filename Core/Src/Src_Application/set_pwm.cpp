@@ -136,7 +136,7 @@ bool set_pwm_class::setFOCPhaseVoltage(uint8_t phase, float voltage)
 
 bool set_pwm_class::setPhaseVoltageInternal(uint8_t phase, float voltage, float maxVoltage)
 {
-    float pwmMax = (float)__HAL_TIM_GET_AUTORELOAD(my_htim);   // e.g. 3400 for 25 kHz
+    float pwmMax = (float)__HAL_TIM_GET_AUTORELOAD(my_htim);   // ARR=3400 -> 23,53 kHz @160 MHz (25 kHz @170 MHz)
     const float pwmScale = pwmMax / BOARD_VCC;
 
     bool isNegative = (voltage < 0.0f);   // get sign

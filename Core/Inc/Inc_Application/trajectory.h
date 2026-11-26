@@ -56,9 +56,9 @@ class trajectory_class
 		PARAM_DEV module_parameter[MAX_NUM_PARAMETER_TRAJEKTORY] =
 		{
 			{0x01, _UINT16, 	MAX_NUM_PARAMETER_TRAJEKTORY, 	0, 100, 	true, "Number of Trajectory Module Parameters"}, // every Module needs this parameter with number of
-			{0x10, _FLOAT, 	{.f32=DEFAULT_MAX_VELOCITY}, 		0, 1000, 	false, "Maximum Velocity of Axis"},
-			{0x11, _FLOAT, 	{.f32=DEFAULT_MAX_ACCELERATION}, 	0, 500, 	false, "Maximum Acceleration of Axis"},
-			{0x12, _FLOAT, 	{.f32=DEFAULT_MAX_ACCELERATION}, 	0, 500, 	false, "Maximum Deceleration of Axis"},
+			{0x10, _FLOAT, 	{.f32=DEFAULT_MAX_VELOCITY}, 		0, 10, 	false, "Maximum Velocity of Axis"},
+			{0x11, _FLOAT, 	{.f32=DEFAULT_MAX_ACCELERATION}, 	0, 10, 	false, "Maximum Acceleration of Axis"},
+			{0x12, _FLOAT, 	{.f32=DEFAULT_MAX_ACCELERATION}, 	0, 10, 	false, "Maximum Deceleration of Axis"},
 			{0x21, _FLOAT, 	{.f32=DEFAULT_MAX_TRAVELRANGE}, 		0, 1000, 	false, "Maximum Travel Range of Axis"},		// [4]
 			{0x22, _FLOAT, 	{.f32=DEFAULT_MIN_TRAVELRANGE}, 		0, 1000, 	false, "Minimum Travel Range of Axis"}
 		};

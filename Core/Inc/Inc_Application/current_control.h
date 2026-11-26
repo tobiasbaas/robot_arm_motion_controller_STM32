@@ -16,7 +16,7 @@ extern ADC_HandleTypeDef hadc4;
 
 namespace current_control_const 
 {
-	constexpr float TS = 1/12500.0f;	// cycle time of the current control loop [s]
+	constexpr float TS = 1/11800.0f;	// cycle time of the current control loop [s]
 };
 
 namespace current_sens

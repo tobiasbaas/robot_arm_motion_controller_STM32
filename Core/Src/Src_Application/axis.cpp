@@ -164,8 +164,8 @@ bool axis_class::run(void)
 	#endif
 
 		// open loop
-		ret = this->myPos->get_el_position(); // just called for data rec. for testing
-		this->myCurrent_Control->readADC();	// just called for data rec. for testing
+		//ret = this->myPos->get_el_position(); // just called for data rec. for testing
+		//	this->myCurrent_Control->readADC();	// just called for data rec. for testing
 		ret = this->myPos->get_stepper_position();
 		ret = this->myTrajectory->calc();
 

@@ -16,8 +16,8 @@ trajectory_class::trajectory_class(void)
 	trajectory_class::move_phase = PHASE_STANDSTILL;
 
 	// initialisierung mit default values
-	trajectory_class::delta_t 			= SYSTEM_SERVO_TIME;
-	trajectory_class::delta_t2 			= SYSTEM_SERVO_TIME * SYSTEM_SERVO_TIME;
+	trajectory_class::delta_t 			= SERVO_AXIS_TIME;
+	trajectory_class::delta_t2 			= SERVO_AXIS_TIME * SERVO_AXIS_TIME;
 	trajectory_class::motion_on 		= false;
 	trajectory_class::setpoint			= 0.0;
 	trajectory_class::slowed_target		= 0.0;

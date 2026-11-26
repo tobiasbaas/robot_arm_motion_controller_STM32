@@ -162,12 +162,12 @@ extern const float PHASEFACTORB[3];
 #define POS_DIR_A			(-1)
 #define POS_DIR_B			(-1)
 
-#define	SYSTEM_SERVO_TIME 	0.0001f 		// Servo Zyklus Zeit in [??]
-#define TIMER_COUTER_MAX	160000		// Max counter for timer of servo frq (Timer clock 160 MHz) //TODO Not 170 MHz?
+#define	SYSTEM_SERVO_TIME 	0.0001f 		// Servo-Zykluszeit [s] fuer 10 kHz Systemtakt (TIM3)
+#define TIMER_COUTER_MAX	160000		// Timer-Takte fuer 100 % Servoload bei 160 MHz (nur gueltig, wenn TIM4 laeuft)
 
 // PI
 #define M_PI 	3.141592654		// PI
-#define M_PI_2 	1.570796327		// PI/2
+#define M_PI_2 	1.570796327f		// PI/2
 #define M_PI_3 	1.047197551		// PI/3
 #define M_2PI 	6.283185307f		// 2 * PI
 
@@ -199,8 +199,8 @@ extern const float PHASEFACTORB[3];
 // Trajectory Parameter
 #define DEFAULT_MAX_TRAVELRANGE 	100.0
 #define DEFAULT_MIN_TRAVELRANGE 	-100.0
-#define DEFAULT_MAX_VELOCITY 		10.0
-#define DEFAULT_MAX_ACCELERATION 	10.0
+#define DEFAULT_MAX_VELOCITY 		5.0
+#define DEFAULT_MAX_ACCELERATION 	5.0
 
 
 /*****************************************************
